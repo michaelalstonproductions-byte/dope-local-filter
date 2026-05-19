@@ -1,12 +1,22 @@
-# DOPE v0.4
+# DOPE v0.5
 
 DOPE means **Dopamine-Oriented Positive Environment**.
 
-DOPE v0.4 is a local-first, opt-in personal reinforcement and positive content recommendation prototype. It is not censorship, propaganda, forced positivity, medical treatment, or a live platform integration. It uses transparent local heuristics and a local content library to help users replace harmful attention loops with healthy, interesting, constructive alternatives.
+DOPE v0.5 is a local-first, opt-in personal reinforcement and positive content recommendation prototype prepared for mobile integration. It is not censorship, propaganda, forced positivity, medical treatment, or a live platform integration. It uses transparent local heuristics and a local content library to help users replace harmful attention loops with healthy, interesting, constructive alternatives.
+
+## V0.5 Mobile-Ready Additions
+
+- Stable engine API in `dope_engine.py`
+- Local bundle helpers in `dope_bundle.py`
+- Mobile JSON contract in `dope_mobile_contract.json`
+- Mode presets in `dope_modes.json`
+- Demo mobile feed in `demo_mobile_feed.json`
+- iOS, browser-extension, and local-first safety guides in `docs/`
+- CLI support for `--bundle`, `--mode`, and `--mobile-json`
 
 ## Safety Rules
 
-DOPE v0.4 does **not**:
+DOPE v0.5 does **not**:
 
 - optimize for infinite scrolling
 - optimize for outrage
@@ -19,7 +29,7 @@ DOPE v0.4 does **not**:
 - block all negative news
 - claim medical treatment or forced brain rewiring
 
-DOPE v0.4 does:
+DOPE v0.5 does:
 
 - classify locally with transparent phrase/token heuristics
 - evaluate harmful categories before uplift
@@ -59,6 +69,10 @@ python3 dope_policy_engine.py sample_feed.json --recommend --session-memory /tmp
 python3 dope_policy_engine.py sample_feed.json --daily-plan --profile dope_profile.json
 python3 dope_policy_engine.py sample_feed.json --json --recommend --profile dope_profile.json
 python3 dope_policy_engine.py sample_feed.json --json --daily-plan --profile dope_profile.json
+python3 dope_policy_engine.py demo_mobile_feed.json --mobile-json
+python3 dope_policy_engine.py demo_mobile_feed.json --bundle /tmp/dope_bundle.json
+python3 dope_policy_engine.py demo_mobile_feed.json --mode parent_guardian
+python3 dope_policy_engine.py demo_mobile_feed.json --mode creator_focus --json
 ```
 
 Malformed, unreadable, or non-object controls/profile JSON exits cleanly with code `2` and a `[DOPE CONFIG ERROR]` message on stderr. It does not print a Python traceback.
@@ -111,7 +125,7 @@ Malformed, unreadable, or non-object controls/profile JSON exits cleanly with co
 
 ```json
 {
-  "dope_version": "0.4",
+  "dope_version": "0.5",
   "profile_used": "default",
   "generated_at": "...",
   "local_first": true,
@@ -136,6 +150,48 @@ Malformed, unreadable, or non-object controls/profile JSON exits cleanly with co
 }
 ```
 
+## Mobile JSON Mode
+
+`--mobile-json` emits one mobile-ready object:
+
+```json
+{
+  "dope_version": "0.5",
+  "local_first": true,
+  "results": [],
+  "recommendations": {},
+  "daily_plan": {},
+  "session_summary": {}
+}
+```
+
+## Local Bundle Format
+
+`dope_bundle.py` reads and writes local bundles:
+
+```json
+{
+  "dope_version": "0.5",
+  "controls": {},
+  "profile": {},
+  "content_library": {},
+  "session_memory": {},
+  "local_first": true
+}
+```
+
+Bundles are for local mobile/browser-extension integration. They are not uploaded by DOPE.
+
+Malformed bundle JSON fails cleanly with exit code `2` and a stderr message beginning
+with `[DOPE BUNDLE ERROR]`. A traceback is not expected for malformed JSON,
+unreadable bundle files, or bundle JSON that is not an object.
+
+## Mode Presets
+
+`dope_modes.json` includes:
+
+`default`, `parent_guardian`, `creator_focus`, `student_learning`, `business_builder`, `fitness_recovery`, `faith_family`
+
 Ranking is not engagement ranking. It gives priority to:
 
 - profile goals
@@ -157,7 +213,7 @@ Examples:
 
 ```json
 {
-  "dope_version": "0.4",
+  "dope_version": "0.5",
   "profile_used": "default",
   "generated_at": "...",
   "local_first": true,
@@ -200,7 +256,7 @@ No external links are required.
 
 ```json
 {
-  "dope_version": "0.4",
+  "dope_version": "0.5",
   "session_started_at": "...",
   "items_seen": 0,
   "category_counts": {},
@@ -238,7 +294,7 @@ Audit records are JSONL and include local-first safety metadata, profile context
     "outrage_optimization": false,
     "harmful_exposure_increase": false
   },
-  "dope_version": "0.4"
+  "dope_version": "0.5"
 }
 ```
 
@@ -252,19 +308,24 @@ Audit records are JSONL and include local-first safety metadata, profile context
 /Volumes/Logic/DOPE_V01/dope_explain.py
 /Volumes/Logic/DOPE_V01/dope_recommender.py
 /Volumes/Logic/DOPE_V01/dope_daily_plan.py
+/Volumes/Logic/DOPE_V01/dope_engine.py
+/Volumes/Logic/DOPE_V01/dope_bundle.py
 /Volumes/Logic/DOPE_V01/dope_schema.json
 /Volumes/Logic/DOPE_V01/dope_recommendation_schema.json
+/Volumes/Logic/DOPE_V01/dope_mobile_contract.json
 /Volumes/Logic/DOPE_V01/dope_controls.json
 /Volumes/Logic/DOPE_V01/dope_profile.json
+/Volumes/Logic/DOPE_V01/dope_modes.json
 /Volumes/Logic/DOPE_V01/dope_content_library.json
 /Volumes/Logic/DOPE_V01/sample_feed.json
+/Volumes/Logic/DOPE_V01/demo_mobile_feed.json
 /Volumes/Logic/DOPE_V01/test_dope_v01.py
 /Volumes/Logic/DOPE_V01/README.md
 ```
 
 ## Limitations
 
-- v0.4 uses transparent keyword and phrase heuristics only.
+- v0.5 uses transparent keyword and phrase heuristics only.
 - Recommendations are local suggestions, not predictions of what will make content engaging.
 - Image and video understanding is limited to supplied captions/text.
 - Slang, coded language, sarcasm, misspellings, and mixed-language content can bypass simple heuristics.

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "dope-content-decision-v0.4",
-  "title": "DOPE v0.4 Content Decision",
+  "$id": "dope-content-decision-v0.5",
+  "title": "DOPE v0.5 Content Decision",
   "description": "Schema for raw classifier decisions. Policy engine results wrap this decision with profile, explanation, recommendation, daily-plan, audit, and optional session-memory metadata.",
   "type": "object",
   "required": [

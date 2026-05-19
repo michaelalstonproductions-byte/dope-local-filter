@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local-only session memory for DOPE v0.4."""
+"""Local-only session memory for DOPE v0.5."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 
-DOPE_VERSION = "0.4"
+DOPE_VERSION = "0.5"
 HARMFUL_CATEGORIES = {"TOXIC", "RAGEBAIT", "DOOMSCROLL", "SHAME", "VIOLENCE", "SEXUALIZED", "SCAM"}
 
 

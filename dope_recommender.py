@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local positive content recommendation engine for DOPE v0.4."""
+"""Local positive content recommendation engine for DOPE v0.5."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Iterable, List, Mapping
 
 
-DOPE_VERSION = "0.4"
+DOPE_VERSION = "0.5"
 RECOMMENDABLE_TARGETS = {
     "learning",
     "creating",

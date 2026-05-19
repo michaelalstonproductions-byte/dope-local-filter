@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "id": "mobile_001",
+      "text": "Everything is collapsing. Crisis after crisis proves we are doomed.",
+      "source": "demo_mobile_feed",
+      "media_type": "text",
+      "metadata": {"surface": "mobile_demo"}
+    },
+    {
+      "id": "mobile_002",
+      "text": "A biography about an inventor shows resilience, rebuilding, wisdom, and a lesson from history.",
+      "source": "demo_mobile_feed",
+      "media_type": "text",
+      "metadata": {"surface": "mobile_demo"}
+    },
+    {
+      "id": "mobile_003",
+      "text": "Guaranteed profit crypto giveaway. Double your money and claim the prize now.",
+      "source": "demo_mobile_feed",
+      "media_type": "text",
+      "metadata": {"surface": "mobile_demo"}
+    },
+    {
+      "id": "mobile_004",
+      "text": "Local officials issued a public safety update after the storm with shelter resources and cleanup guidance.",
+      "source": "demo_mobile_feed",
+      "media_type": "text",
+      "metadata": {"surface": "mobile_demo"}
+    },
+    "malformed mobile feed item"
+  ]
+}

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.4 - Positive replacement engine.
+DOPE v0.5 - Positive replacement engine.
 
 This module intentionally does not rank by engagement. Replacements are chosen
 from healthy domains and lightly rotated by category to avoid a single loop.

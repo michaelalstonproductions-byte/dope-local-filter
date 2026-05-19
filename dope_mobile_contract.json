@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dope-mobile-contract-v0.5",
+  "title": "DOPE v0.5 Mobile JSON Contract",
+  "type": "object",
+  "required": [
+    "dope_version",
+    "local_first",
+    "results",
+    "recommendations",
+    "daily_plan",
+    "session_summary"
+  ],
+  "properties": {
+    "dope_version": {"type": "string", "const": "0.5"},
+    "local_first": {"type": "boolean", "const": true},
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["index", "content", "decision", "audit_status", "audit_path"],
+        "properties": {
+          "index": {"type": ["integer", "null"]},
+          "content": {"type": "object"},
+          "decision": {"type": "object"},
+          "profile_used": {"type": "string"},
+          "explanation": {"type": "string"},
+          "replacement_explanation": {"type": "string"},
+          "replacement_source": {"type": "string"},
+          "session_summary": {"type": "object"},
+          "audit_status": {"type": "string", "enum": ["written", "failed"]},
+          "audit_path": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "recommendations": {"type": "object"},
+    "daily_plan": {"type": "object"},
+    "session_summary": {"type": "object"}
+  },
+  "additionalProperties": false
+}

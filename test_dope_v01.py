@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standard-library tests for DOPE v0.4."""
+"""Standard-library tests for DOPE v0.5."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ import tempfile
 import unittest
 
 from dope_classifier import ACTIONS, CATEGORIES, classify_content, normalize_controls, parse_bool
+from dope_bundle import default_bundle, load_bundle, save_bundle, validate_bundle
 from dope_daily_plan import build_daily_plan
+from dope_engine import evaluate_content, evaluate_feed, run_dope_bundle
 from dope_policy_engine import DopePolicyEngine, load_controls_config, load_feed, load_profile
 from dope_recommender import build_recommendations
 from dope_reinforcement_engine import load_content_library
@@ -23,10 +25,66 @@ SAMPLE_FEED = PROJECT_DIR / "sample_feed.json"
 CONTROLS_FILE = PROJECT_DIR / "dope_controls.json"
 PROFILE_FILE = PROJECT_DIR / "dope_profile.json"
 CONTENT_LIBRARY_FILE = PROJECT_DIR / "dope_content_library.json"
+DEMO_MOBILE_FEED = PROJECT_DIR / "demo_mobile_feed.json"
+MODES_FILE = PROJECT_DIR / "dope_modes.json"
 NETWORK_IMPORT_TERMS = ("requests", "urllib", "http.client", "socket")
 
 
-class DopeV04Tests(unittest.TestCase):
+class DopeV05Tests(unittest.TestCase):
+    def test_engine_and_bundle_imports(self) -> None:
+        self.assertTrue(callable(evaluate_content))
+        self.assertTrue(callable(evaluate_feed))
+        self.assertTrue(callable(run_dope_bundle))
+        self.assertTrue(callable(default_bundle))
+
+    def test_default_bundle_validates(self) -> None:
+        valid, errors = validate_bundle(default_bundle())
+        self.assertTrue(valid, errors)
+
+    def test_save_load_bundle_roundtrip_works(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "bundle.json"
+            bundle = default_bundle()
+            save_bundle(bundle, path)
+            loaded = load_bundle(path)
+            self.assertEqual(loaded["dope_version"], "0.5")
+            self.assertTrue(loaded["local_first"])
+            self.assertTrue(validate_bundle(loaded)[0])
+
+    def test_engine_evaluate_content_works(self) -> None:
+        result = evaluate_content({"text": "Learn one useful step and take a walk."})
+        self.assertIn("decision", result)
+        self.assertEqual(result["decision"]["action"], "ALLOW")
+
+    def test_engine_evaluate_feed_works(self) -> None:
+        output = evaluate_feed([{"text": "Everything is collapsing and we are doomed."}, "bad item"], session_memory={})
+        self.assertEqual(len(output["results"]), 2)
+        self.assertTrue(output["audit_written"])
+        self.assertEqual(output["session_summary"]["items_seen"], 2)
+
+    def test_run_dope_bundle_works(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "bundle.json"
+            output = run_dope_bundle(load_feed(DEMO_MOBILE_FEED), bundle_path=path)
+            self.assertEqual(output["dope_version"], "0.5")
+            self.assertTrue(output["local_first"])
+            self.assertTrue(path.exists())
+            self.assertIn("recommendations", output)
+
+    def test_all_mode_presets_load(self) -> None:
+        modes = json.loads(MODES_FILE.read_text(encoding="utf-8"))
+        self.assertEqual(
+            set(modes),
+            {"default", "parent_guardian", "creator_focus", "student_learning", "business_builder", "fitness_recovery", "faith_family"},
+        )
+        for mode in modes.values():
+            self.assertIn("primary_goals", mode)
+            self.assertIn("stricter_categories", mode)
+            self.assertIn("preferred_replacement_targets", mode)
+            self.assertIn("allow_hard_news", mode)
+            self.assertIn("replacement_style", mode)
+            self.assertIn("daily_reinforcement_limit", mode)
+
     def test_recommender_and_daily_plan_import(self) -> None:
         self.assertTrue(callable(build_recommendations))
         self.assertTrue(callable(build_daily_plan))
@@ -136,7 +194,7 @@ class DopeV04Tests(unittest.TestCase):
 
     def test_profile_json_loads(self) -> None:
         profile = load_profile(PROFILE_FILE)
-        self.assertEqual(profile["dope_version"], "0.4")
+        self.assertEqual(profile["dope_version"], "0.5")
         self.assertEqual(profile["profile_name"], "default")
         self.assertIn("business_progress", profile["primary_goals"])
 
@@ -318,7 +376,7 @@ class DopeV04Tests(unittest.TestCase):
             engine = DopePolicyEngine(audit_path=audit_path)
             engine.decide_content({"text": "The meeting starts at six."}, index=0)
             record = json.loads(audit_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["dope_version"], "0.4")
+            self.assertEqual(record["dope_version"], "0.5")
             self.assertTrue(record["local_first"])
             self.assertFalse(record["dark_patterns"]["outrage_optimization"])
             self.assertEqual(record["profile_used"], "default")
@@ -359,7 +417,7 @@ class DopeV04Tests(unittest.TestCase):
             {"decision": {"category": "RAGEBAIT", "action": "REPLACE"}},
         ]
         output = build_recommendations(results, profile, library, limit=5)
-        self.assertEqual(output["dope_version"], "0.4")
+        self.assertEqual(output["dope_version"], "0.5")
         self.assertTrue(output["local_first"])
         self.assertEqual(output["profile_used"], "default")
         self.assertEqual(len(output["recommendations"]), 5)
@@ -408,7 +466,7 @@ class DopeV04Tests(unittest.TestCase):
         profile = load_profile(PROFILE_FILE)
         library = load_content_library(CONTENT_LIBRARY_FILE)
         plan = build_daily_plan(profile, library)
-        self.assertEqual(plan["dope_version"], "0.4")
+        self.assertEqual(plan["dope_version"], "0.5")
         self.assertTrue(plan["local_first"])
         for key in ("morning", "midday", "evening", "emergency_reset"):
             self.assertIn(key, plan)
@@ -523,9 +581,161 @@ class DopeV04Tests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         payload = json.loads(result.stdout)
-        self.assertEqual(payload["dope_version"], "0.4")
+        self.assertEqual(payload["dope_version"], "0.5")
         self.assertTrue(payload["local_first"])
         self.assertIn("recommendations", payload)
+
+    def test_mobile_json_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(DEMO_MOBILE_FEED),
+                "--mobile-json",
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["dope_version"], "0.5")
+        self.assertTrue(payload["local_first"])
+        self.assertIn("results", payload)
+        self.assertIn("recommendations", payload)
+        self.assertIn("daily_plan", payload)
+        self.assertIn("session_summary", payload)
+
+    def test_mode_parent_guardian_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(DEMO_MOBILE_FEED),
+                "--mode",
+                "parent_guardian",
+                "--json",
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload[0]["profile_used"], "parent_guardian")
+
+    def test_mode_creator_focus_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(DEMO_MOBILE_FEED),
+                "--mode",
+                "creator_focus",
+                "--json",
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload[0]["profile_used"], "creator_focus")
+
+    def test_bundle_cli_creates_local_bundle(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_path = pathlib.Path(tmp) / "bundle.json"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(DEMO_MOBILE_FEED),
+                    "--bundle",
+                    str(bundle_path),
+                    "--mobile-json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(bundle_path.exists())
+            self.assertTrue(json.loads(result.stdout)["local_first"])
+
+    def test_mobile_json_valid_bundle_cli_emits_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_path = pathlib.Path(tmp) / "bundle.json"
+            save_bundle(default_bundle(), bundle_path)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(DEMO_MOBILE_FEED),
+                    "--bundle",
+                    str(bundle_path),
+                    "--mobile-json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["dope_version"], "0.5")
+            self.assertTrue(payload["local_first"])
+
+    def test_malformed_bundle_json_exits_2_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_path = pathlib.Path(tmp) / "bad_bundle.json"
+            bundle_path.write_text("{bad json", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(DEMO_MOBILE_FEED),
+                    "--bundle",
+                    str(bundle_path),
+                    "--mobile-json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("[DOPE BUNDLE ERROR]", result.stderr)
+            self.assertIn("malformed JSON", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertEqual(result.stdout, "")
+
+    def test_non_object_bundle_json_exits_2_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle_path = pathlib.Path(tmp) / "list_bundle.json"
+            bundle_path.write_text("[1, 2, 3]", encoding="utf-8")
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(DEMO_MOBILE_FEED),
+                    "--bundle",
+                    str(bundle_path),
+                    "--json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("[DOPE BUNDLE ERROR]", result.stderr)
+            self.assertIn("bundle JSON must be an object", result.stderr)
+            self.assertNotIn("Traceback", result.stderr)
+            self.assertEqual(result.stdout, "")
 
     def test_cli_smoke_test_works(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -564,7 +774,7 @@ class DopeV04Tests(unittest.TestCase):
             for line in lines:
                 record = json.loads(line)
                 self.assertIn("decision", record)
-                self.assertEqual(record["dope_version"], "0.4")
+                self.assertEqual(record["dope_version"], "0.5")
 
     def test_no_network_related_imports_are_introduced(self) -> None:
         for path in PROJECT_DIR.glob("*.py"):

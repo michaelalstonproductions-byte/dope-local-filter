@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""User-facing explanations for DOPE v0.4 decisions."""
+"""User-facing explanations for DOPE v0.5 decisions."""
 
 from __future__ import annotations
 

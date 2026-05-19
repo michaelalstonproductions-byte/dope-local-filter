@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple local daily plan builder for DOPE v0.4."""
+"""Simple local daily plan builder for DOPE v0.5."""
 
 from __future__ import annotations
 

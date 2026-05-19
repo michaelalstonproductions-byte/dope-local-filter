@@ -1,0 +1,58 @@
+{
+  "default": {
+    "primary_goals": ["learn", "create", "fitness", "calm", "family", "spirituality", "business_progress", "emotional_regulation"],
+    "stricter_categories": ["SCAM", "VIOLENCE", "SEXUALIZED"],
+    "preferred_replacement_targets": ["learning", "creating", "working", "fitness", "calm", "family", "spirituality", "business_progress", "emotional_regulation"],
+    "allow_hard_news": true,
+    "replacement_style": "firm_but_kind",
+    "daily_reinforcement_limit": 25
+  },
+  "parent_guardian": {
+    "primary_goals": ["family", "calm", "learn", "emotional_regulation"],
+    "stricter_categories": ["SCAM", "VIOLENCE", "SEXUALIZED", "SHAME"],
+    "preferred_replacement_targets": ["family", "learning", "calm", "gratitude", "discipline"],
+    "allow_hard_news": true,
+    "replacement_style": "protective_clear",
+    "daily_reinforcement_limit": 20
+  },
+  "creator_focus": {
+    "primary_goals": ["create", "work", "business_progress", "calm"],
+    "stricter_categories": ["RAGEBAIT", "DOOMSCROLL", "SCAM"],
+    "preferred_replacement_targets": ["creating", "working", "business_progress", "discipline", "calm"],
+    "allow_hard_news": true,
+    "replacement_style": "direct_practical",
+    "daily_reinforcement_limit": 25
+  },
+  "student_learning": {
+    "primary_goals": ["learn", "calm", "discipline", "emotional_regulation"],
+    "stricter_categories": ["SCAM", "SHAME", "RAGEBAIT"],
+    "preferred_replacement_targets": ["learning", "working", "discipline", "calm", "gratitude"],
+    "allow_hard_news": true,
+    "replacement_style": "encouraging_clear",
+    "daily_reinforcement_limit": 25
+  },
+  "business_builder": {
+    "primary_goals": ["business_progress", "work", "create", "discipline"],
+    "stricter_categories": ["SCAM", "RAGEBAIT", "DOOMSCROLL"],
+    "preferred_replacement_targets": ["business_progress", "working", "learning", "discipline", "creating"],
+    "allow_hard_news": true,
+    "replacement_style": "practical_sober",
+    "daily_reinforcement_limit": 25
+  },
+  "fitness_recovery": {
+    "primary_goals": ["fitness", "calm", "emotional_regulation", "discipline"],
+    "stricter_categories": ["SHAME", "SEXUALIZED", "TOXIC"],
+    "preferred_replacement_targets": ["fitness", "calm", "gratitude", "discipline", "emotional_regulation"],
+    "allow_hard_news": true,
+    "replacement_style": "body_neutral_supportive",
+    "daily_reinforcement_limit": 20
+  },
+  "faith_family": {
+    "primary_goals": ["spirituality", "family", "calm", "gratitude"],
+    "stricter_categories": ["VIOLENCE", "SEXUALIZED", "RAGEBAIT", "SHAME"],
+    "preferred_replacement_targets": ["spirituality", "family", "gratitude", "calm", "civic_awareness"],
+    "allow_hard_news": true,
+    "replacement_style": "firm_but_kind",
+    "daily_reinforcement_limit": 20
+  }
+}

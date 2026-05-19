@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.4 - Feed decision engine with local audit log.
+DOPE v0.5 - Feed decision engine with local audit log.
 
 classify_content() returns raw classifier output. DopePolicyEngine.decide_content()
 returns policy output enriched with replacement text and audit status.
@@ -17,6 +17,7 @@ from typing import Any, Dict, Iterable, List, Mapping
 
 from dope_classifier import DEFAULT_CONTROLS, DOPE_VERSION, normalize_controls, parse_bool, required_output
 from dope_classifier import classify_content
+from dope_bundle import DopeBundleError, default_bundle, load_bundle, save_bundle
 from dope_daily_plan import build_daily_plan
 from dope_explain import explain_decision, explain_replacement
 from dope_recommender import build_recommendations
@@ -27,6 +28,7 @@ from dope_session_memory import load_session_memory, save_session_memory, summar
 PROJECT_DIR = pathlib.Path(__file__).resolve().parent
 DEFAULT_AUDIT_LOG_PATH = PROJECT_DIR / "audit" / "dope_audit.jsonl"
 DEFAULT_PROFILE_PATH = PROJECT_DIR / "dope_profile.json"
+DEFAULT_MODES_PATH = PROJECT_DIR / "dope_modes.json"
 
 
 class DopeConfigError(Exception):
@@ -111,6 +113,52 @@ def load_profile(path: pathlib.Path | None) -> Dict[str, Any]:
         profile["sensitive_areas"] = default_profile()["sensitive_areas"]
     profile["dope_version"] = DOPE_VERSION
     return profile
+
+
+def load_modes(path: pathlib.Path | None = None) -> Dict[str, Any]:
+    modes_path = path or DEFAULT_MODES_PATH
+    try:
+        with modes_path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def apply_mode(profile: Mapping[str, Any], controls: Mapping[str, Any], mode_name: str | None) -> tuple[Dict[str, Any], Dict[str, Any]]:
+    if not mode_name:
+        return dict(profile), normalize_controls(controls)
+    modes = load_modes()
+    preset = modes.get(mode_name)
+    if not isinstance(preset, Mapping):
+        raise DopeConfigError(f"Could not load mode: {mode_name}: mode not found")
+
+    updated_profile = dict(profile)
+    updated_controls = dict(controls)
+    if isinstance(preset.get("primary_goals"), list):
+        updated_profile["primary_goals"] = list(preset["primary_goals"])
+    if isinstance(preset.get("preferred_replacement_targets"), list):
+        updated_controls["positive_reinforcement_targets"] = list(preset["preferred_replacement_targets"])
+    content_preferences = dict(updated_profile.get("content_preferences", {}))
+    content_preferences["allow_hard_news"] = bool(preset.get("allow_hard_news", True))
+    updated_profile["content_preferences"] = content_preferences
+    updated_profile["replacement_style"] = str(preset.get("replacement_style", updated_profile.get("replacement_style", "firm_but_kind")))
+    updated_profile["daily_reinforcement_limit"] = int(preset.get("daily_reinforcement_limit", updated_profile.get("daily_reinforcement_limit", 25)))
+    updated_profile["profile_name"] = mode_name
+    updated_profile["dope_version"] = DOPE_VERSION
+
+    stricter = {str(category) for category in preset.get("stricter_categories", []) if str(category)}
+    if stricter:
+        updated_controls["strictness"] = "high"
+    if "SCAM" in stricter:
+        updated_controls["block_scam"] = True
+    if "VIOLENCE" in stricter:
+        updated_controls["block_violence"] = True
+    if "SEXUALIZED" in stricter:
+        updated_controls["block_sexualized"] = True
+    if "DOOMSCROLL" in stricter:
+        updated_controls["replace_doomscroll"] = True
+    return updated_profile, normalize_controls(updated_controls)
 
 
 def normalize_feed_item(item: Any, index: int | None = None) -> tuple[Dict[str, Any], str | None]:
@@ -230,11 +278,12 @@ class DopePolicyEngine:
             "audit_status": "failed",
             "audit_path": str(self.audit_path),
         }
-        if self.session_memory is not None and self.session_memory_path is not None:
+        if self.session_memory is not None:
             self.session_memory = update_session_memory(self.session_memory, result)
             session_summary = summarize_session(self.session_memory)
             result["session_summary"] = session_summary
-            save_session_memory(self.session_memory, self.session_memory_path)
+            if self.session_memory_path is not None:
+                save_session_memory(self.session_memory, self.session_memory_path)
 
         try:
             result["audit_status"] = self._write_audit(result, validation_error=validation_error)
@@ -349,14 +398,17 @@ def print_daily_plan(plan: Dict[str, Any]) -> None:
 
 
 def parse_args(argv: List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="DOPE v0.4 local-first content policy engine")
+    parser = argparse.ArgumentParser(description="DOPE v0.5 local-first content policy engine")
     parser.add_argument("feed_path", help="Path to a JSON feed file")
+    parser.add_argument("--bundle", help="Optional local DOPE bundle path")
     parser.add_argument("--config", help="Optional local JSON controls config")
     parser.add_argument("--profile", help="Optional local JSON reinforcement profile")
+    parser.add_argument("--mode", help="Optional local mode preset name")
     parser.add_argument("--audit-path", help="Optional JSONL audit log path")
     parser.add_argument("--session-memory", help="Optional local JSON session memory path")
     parser.add_argument("--recommend", action="store_true", help="Build local positive recommendations")
     parser.add_argument("--daily-plan", action="store_true", help="Build a simple local daily plan")
+    parser.add_argument("--mobile-json", action="store_true", help="Print one mobile-ready JSON object")
     parser.add_argument("--strictness", choices=["low", "medium", "high"])
     parser.add_argument("--allow-spirituality", type=parse_bool)
     parser.add_argument("--allow-business", type=parse_bool)
@@ -372,20 +424,59 @@ def parse_args(argv: List[str]) -> argparse.Namespace:
 def main(argv: List[str] | None = None) -> int:
     args = parse_args(argv or sys.argv[1:])
     try:
-        controls = build_controls(args)
-        profile = load_profile(pathlib.Path(args.profile)) if args.profile else load_profile(DEFAULT_PROFILE_PATH)
+        bundle = None
+        if args.bundle:
+            bundle_path = pathlib.Path(args.bundle)
+            if bundle_path.exists():
+                bundle = load_bundle(bundle_path)
+            else:
+                bundle = default_bundle()
+                save_bundle(bundle, bundle_path)
+        controls = dict(bundle.get("controls", {})) if isinstance(bundle, Mapping) else build_controls(args)
+        if not bundle and args.config:
+            controls = build_controls(args)
+        profile = dict(bundle.get("profile", {})) if isinstance(bundle, Mapping) else load_profile(pathlib.Path(args.profile)) if args.profile else load_profile(DEFAULT_PROFILE_PATH)
+        profile, controls = apply_mode(profile, controls, args.mode)
     except DopeConfigError as exc:
         print(f"[DOPE CONFIG ERROR] {exc}", file=sys.stderr)
         return 2
+    except DopeBundleError as exc:
+        print(f"[DOPE BUNDLE ERROR] {exc}", file=sys.stderr)
+        return 2
     items = load_feed(pathlib.Path(args.feed_path))
+    session_memory_path = args.session_memory
     engine = DopePolicyEngine(
         controls=controls,
         audit_path=args.audit_path,
         profile=profile,
-        session_memory_path=args.session_memory,
+        session_memory_path=session_memory_path,
     )
+    if isinstance(bundle, Mapping) and not session_memory_path:
+        engine.session_memory = dict(bundle.get("session_memory", {}))
     results = engine.evaluate_feed(items)
-    content_library = load_content_library()
+    content_library = dict(bundle.get("content_library", {})) if isinstance(bundle, Mapping) else load_content_library()
+    session_summary = summarize_session(engine.session_memory or {})
+    if isinstance(bundle, dict):
+        bundle["session_memory"] = engine.session_memory or bundle.get("session_memory", {})
+        save_bundle(bundle, args.bundle)
+    if args.mobile_json:
+        recommendations = build_recommendations(results, profile, content_library, session_memory=engine.session_memory)
+        daily_plan = build_daily_plan(profile, content_library, session_memory=engine.session_memory)
+        print(
+            json.dumps(
+                {
+                    "dope_version": DOPE_VERSION,
+                    "local_first": True,
+                    "results": results,
+                    "recommendations": recommendations,
+                    "daily_plan": daily_plan,
+                    "session_summary": session_summary,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
     if args.recommend:
         recommendations = build_recommendations(
             results,
