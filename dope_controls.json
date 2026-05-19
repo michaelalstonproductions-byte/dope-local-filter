@@ -1,0 +1,27 @@
+{
+  "strictness": "medium",
+  "allow_spirituality": true,
+  "allow_business": true,
+  "allow_fitness": true,
+  "block_sexualized": true,
+  "block_scam": true,
+  "block_violence": true,
+  "replace_doomscroll": true,
+  "confidence_thresholds": {
+    "soft_warn": 0.35,
+    "blur": 0.55,
+    "block": 0.7,
+    "replace": 0.5
+  },
+  "positive_reinforcement_targets": [
+    "learning",
+    "creating",
+    "working",
+    "fitness",
+    "calm",
+    "family",
+    "spirituality",
+    "business_progress",
+    "emotional_regulation"
+  ]
+}

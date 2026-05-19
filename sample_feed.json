@@ -1,0 +1,75 @@
+{
+  "items": [
+    {
+      "id": "uplift_001",
+      "text": "Take a walk outside, breathe, journal one small win, and build your project for 25 minutes.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "UPLIFT"}
+    },
+    {
+      "id": "neutral_001",
+      "text": "The community meeting starts at 6 PM and the agenda has three items.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "NEUTRAL"}
+    },
+    {
+      "id": "toxic_001",
+      "text": "Everyone should mock that idiot because they are absolute trash.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "TOXIC"}
+    },
+    {
+      "id": "ragebait_001",
+      "text": "You won't believe this outrage. Watch them get exposed and destroyed in seconds.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "RAGEBAIT"}
+    },
+    {
+      "id": "doomscroll_001",
+      "text": "Everything is collapsing. Crisis after crisis proves we are doomed.",
+      "source": "news_caption",
+      "media_type": "video_caption",
+      "metadata": {"expected_category": "DOOMSCROLL"}
+    },
+    {
+      "id": "shame_001",
+      "text": "You are worthless, lazy, and you will never be enough.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "SHAME"}
+    },
+    {
+      "id": "violence_001",
+      "text": "Graphic fight footage with blood everywhere after the street fight.",
+      "source": "video_site",
+      "media_type": "video_caption",
+      "metadata": {"expected_category": "VIOLENCE"}
+    },
+    {
+      "id": "sexualized_001",
+      "text": "NSFW explicit content and thirst trap clips.",
+      "source": "social_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "SEXUALIZED"}
+    },
+    {
+      "id": "scam_001",
+      "text": "Guaranteed profit from this crypto giveaway. Double your money and claim the prize now.",
+      "source": "ad",
+      "media_type": "text",
+      "metadata": {"expected_category": "SCAM"}
+    },
+    {
+      "id": "mixed_harmful_uplift_001",
+      "text": "Learn this calm business skill, but first send money now for a guaranteed profit crypto giveaway.",
+      "source": "ad",
+      "media_type": "text",
+      "metadata": {"expected_category": "SCAM", "expected_labels": ["SCAM", "UPLIFT"]}
+    },
+    "malformed item that should not crash"
+  ]
+}
