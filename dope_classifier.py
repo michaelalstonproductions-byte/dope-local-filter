@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.3 - Local-first positive reinforcement classifier.
+DOPE v0.4 - Local-first positive reinforcement classifier.
 
 DOPE = Dopamine-Oriented Positive Environment.
 
@@ -17,7 +17,7 @@ import re
 from typing import Any, Dict, Iterable, Mapping, Tuple
 
 
-DOPE_VERSION = "0.3"
+DOPE_VERSION = "0.4"
 
 CATEGORIES = {
     "UPLIFT",

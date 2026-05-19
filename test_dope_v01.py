@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standard-library tests for DOPE v0.3."""
+"""Standard-library tests for DOPE v0.4."""
 
 from __future__ import annotations
 
@@ -11,7 +11,9 @@ import tempfile
 import unittest
 
 from dope_classifier import ACTIONS, CATEGORIES, classify_content, normalize_controls, parse_bool
+from dope_daily_plan import build_daily_plan
 from dope_policy_engine import DopePolicyEngine, load_controls_config, load_feed, load_profile
+from dope_recommender import build_recommendations
 from dope_reinforcement_engine import load_content_library
 from dope_session_memory import load_session_memory, update_session_memory
 
@@ -24,7 +26,11 @@ CONTENT_LIBRARY_FILE = PROJECT_DIR / "dope_content_library.json"
 NETWORK_IMPORT_TERMS = ("requests", "urllib", "http.client", "socket")
 
 
-class DopeV03Tests(unittest.TestCase):
+class DopeV04Tests(unittest.TestCase):
+    def test_recommender_and_daily_plan_import(self) -> None:
+        self.assertTrue(callable(build_recommendations))
+        self.assertTrue(callable(build_daily_plan))
+
     def test_parse_bool_false_strings(self) -> None:
         self.assertIs(parse_bool("false"), False)
         self.assertIs(parse_bool("0"), False)
@@ -130,7 +136,7 @@ class DopeV03Tests(unittest.TestCase):
 
     def test_profile_json_loads(self) -> None:
         profile = load_profile(PROFILE_FILE)
-        self.assertEqual(profile["dope_version"], "0.3")
+        self.assertEqual(profile["dope_version"], "0.4")
         self.assertEqual(profile["profile_name"], "default")
         self.assertIn("business_progress", profile["primary_goals"])
 
@@ -138,6 +144,24 @@ class DopeV03Tests(unittest.TestCase):
         library = load_content_library(CONTENT_LIBRARY_FILE)
         self.assertIn("positive_history", library)
         self.assertIn("constructive_news", library)
+        for target in (
+            "learning",
+            "creating",
+            "working",
+            "fitness",
+            "calm",
+            "family",
+            "spirituality",
+            "business_progress",
+            "emotional_regulation",
+            "positive_history",
+            "constructive_news",
+            "civic_awareness",
+            "gratitude",
+            "discipline",
+            "emergency_reset",
+        ):
+            self.assertGreaterEqual(len(library[target]), 5)
 
     def test_hard_news_is_not_automatically_blocked(self) -> None:
         decision = classify_content(
@@ -288,13 +312,13 @@ class DopeV03Tests(unittest.TestCase):
             self.assertEqual(record["validation_error"], "feed_item_not_object:str")
             self.assertIn("explanation", record)
 
-    def test_audit_includes_dope_version_03(self) -> None:
+    def test_audit_includes_dope_version_04(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             audit_path = pathlib.Path(tmp) / "audit.jsonl"
             engine = DopePolicyEngine(audit_path=audit_path)
             engine.decide_content({"text": "The meeting starts at six."}, index=0)
             record = json.loads(audit_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["dope_version"], "0.3")
+            self.assertEqual(record["dope_version"], "0.4")
             self.assertTrue(record["local_first"])
             self.assertFalse(record["dark_patterns"]["outrage_optimization"])
             self.assertEqual(record["profile_used"], "default")
@@ -310,6 +334,93 @@ class DopeV03Tests(unittest.TestCase):
         self.assertEqual(updated["category_counts"]["DOOMSCROLL"], 1)
         self.assertEqual(updated["action_counts"]["REPLACE"], 1)
         self.assertEqual(updated["replacement_counts"]["calm"], 1)
+
+    def test_malformed_session_memory_values_do_not_crash(self) -> None:
+        memory = {
+            "items_seen": "bad",
+            "category_counts": {"DOOMSCROLL": "bad"},
+            "action_counts": {"REPLACE": "bad"},
+            "replacement_counts": {"calm": "bad"},
+            "positive_targets_served": {"calm": "bad"},
+        }
+        result = {
+            "decision": {"category": "DOOMSCROLL", "action": "REPLACE", "positive_replacement": "Take six breaths."},
+            "replacement_source": "calm",
+        }
+        updated = update_session_memory(memory, result)
+        self.assertEqual(updated["items_seen"], 1)
+        self.assertEqual(updated["category_counts"]["DOOMSCROLL"], 1)
+
+    def test_build_recommendations_output_contract(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        results = [
+            {"decision": {"category": "DOOMSCROLL", "action": "REPLACE"}},
+            {"decision": {"category": "RAGEBAIT", "action": "REPLACE"}},
+        ]
+        output = build_recommendations(results, profile, library, limit=5)
+        self.assertEqual(output["dope_version"], "0.4")
+        self.assertTrue(output["local_first"])
+        self.assertEqual(output["profile_used"], "default")
+        self.assertEqual(len(output["recommendations"]), 5)
+        self.assertTrue(all(row["source"] == "local_content_library" for row in output["recommendations"]))
+
+    def test_repeated_doomscroll_memory_changes_recommendation_mix(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        output = build_recommendations([], profile, library, {"category_counts": {"DOOMSCROLL": 4}}, limit=3)
+        targets = {row["target"] for row in output["recommendations"]}
+        self.assertTrue({"calm", "constructive_news"} & targets)
+
+    def test_repeated_ragebait_memory_changes_recommendation_mix(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        output = build_recommendations([], profile, library, {"category_counts": {"RAGEBAIT": 4}}, limit=3)
+        targets = {row["target"] for row in output["recommendations"]}
+        self.assertTrue({"emotional_regulation", "civic_awareness", "learning"} & targets)
+
+    def test_positive_history_uplift_recommends_reflective_action_in_top_five(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        content = {"text": "A biography about an inventor shows resilience and a lesson from history."}
+        decision = classify_content(content)
+        self.assertEqual(decision["category"], "UPLIFT")
+        self.assertIn("POSITIVE_HISTORY", decision["labels"])
+        output = build_recommendations(
+            [{"decision": decision}],
+            profile,
+            library,
+            session_memory=None,
+            limit=5,
+        )
+        top_five = output["recommendations"][:5]
+        targets = {row["target"] for row in top_five}
+        modes = {row["mode"] for row in top_five}
+        prompts = " ".join(row["prompt"].lower() for row in top_five)
+        self.assertTrue(
+            {"positive_history", "gratitude"} & targets
+            or {"reflect", "create", "read"} & modes
+            or "real-world" in prompts
+            or "action" in prompts
+        )
+
+    def test_daily_plan_has_required_sections(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        plan = build_daily_plan(profile, library)
+        self.assertEqual(plan["dope_version"], "0.4")
+        self.assertTrue(plan["local_first"])
+        for key in ("morning", "midday", "evening", "emergency_reset"):
+            self.assertIn(key, plan)
+            self.assertIsInstance(plan[key], list)
+
+    def test_daily_plan_missing_emergency_reset_uses_warning_not_fallback_text(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        library = dict(load_content_library(CONTENT_LIBRARY_FILE))
+        library.pop("emergency_reset", None)
+        plan = build_daily_plan(profile, library)
+        self.assertEqual(plan["emergency_reset"], [])
+        self.assertEqual(plan["warnings"], ["missing_local_content_library_emergency_reset"])
 
     def test_json_cli_works(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -358,6 +469,64 @@ class DopeV03Tests(unittest.TestCase):
             self.assertIsInstance(json.loads(result.stdout), list)
             self.assertTrue(audit_path.exists())
 
+    def test_recommend_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(SAMPLE_FEED),
+                "--recommend",
+                "--profile",
+                str(PROFILE_FILE),
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("=== DOPE RECOMMENDATIONS ===", result.stdout)
+
+    def test_daily_plan_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(SAMPLE_FEED),
+                "--daily-plan",
+                "--profile",
+                str(PROFILE_FILE),
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("=== DOPE DAILY PLAN ===", result.stdout)
+
+    def test_json_recommend_cli_works(self) -> None:
+        result = subprocess.run(
+            [
+                sys.executable,
+                str(PROJECT_DIR / "dope_policy_engine.py"),
+                str(SAMPLE_FEED),
+                "--json",
+                "--recommend",
+                "--profile",
+                str(PROFILE_FILE),
+            ],
+            cwd=str(PROJECT_DIR),
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["dope_version"], "0.4")
+        self.assertTrue(payload["local_first"])
+        self.assertIn("recommendations", payload)
+
     def test_cli_smoke_test_works(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             audit_path = pathlib.Path(tmp) / "cli_audit.jsonl"
@@ -395,7 +564,7 @@ class DopeV03Tests(unittest.TestCase):
             for line in lines:
                 record = json.loads(line)
                 self.assertIn("decision", record)
-                self.assertEqual(record["dope_version"], "0.3")
+                self.assertEqual(record["dope_version"], "0.4")
 
     def test_no_network_related_imports_are_introduced(self) -> None:
         for path in PROJECT_DIR.glob("*.py"):

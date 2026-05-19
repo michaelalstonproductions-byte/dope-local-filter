@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "dope-recommendation-v0.4",
+  "title": "DOPE v0.4 Recommendation And Daily Plan Outputs",
+  "type": "object",
+  "oneOf": [
+    {"$ref": "#/$defs/recommendation_output"},
+    {"$ref": "#/$defs/daily_plan_output"}
+  ],
+  "$defs": {
+    "target": {
+      "type": "string",
+      "enum": [
+        "learning",
+        "creating",
+        "working",
+        "fitness",
+        "calm",
+        "family",
+        "spirituality",
+        "business_progress",
+        "emotional_regulation",
+        "positive_history",
+        "constructive_news",
+        "civic_awareness",
+        "gratitude",
+        "discipline",
+        "emergency_reset"
+      ]
+    },
+    "time_cost": {
+      "type": "string",
+      "enum": ["under_2_min", "5_min", "15_min", "30_min"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["read", "watch", "create", "move", "reflect", "connect", "work"]
+    },
+    "library_source": {
+      "type": "string",
+      "const": "local_content_library"
+    },
+    "recommendation_item": {
+      "type": "object",
+      "required": [
+        "rank",
+        "target",
+        "title",
+        "prompt",
+        "why",
+        "recommended_after",
+        "time_cost",
+        "mode",
+        "source"
+      ],
+      "properties": {
+        "rank": {"type": "integer", "minimum": 1},
+        "target": {"$ref": "#/$defs/target"},
+        "title": {"type": "string", "minLength": 1},
+        "prompt": {"type": "string", "minLength": 1},
+        "why": {"type": "string", "minLength": 1},
+        "recommended_after": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "time_cost": {"$ref": "#/$defs/time_cost"},
+        "mode": {"$ref": "#/$defs/mode"},
+        "source": {"$ref": "#/$defs/library_source"}
+      },
+      "additionalProperties": false
+    },
+    "avoidance_summary": {
+      "type": "object",
+      "required": ["dominant_risk", "blocked_or_replaced_count", "reason"],
+      "properties": {
+        "dominant_risk": {"type": "string"},
+        "blocked_or_replaced_count": {"type": "integer", "minimum": 0},
+        "reason": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "plan_item": {
+      "type": "object",
+      "required": ["target", "title", "prompt", "why", "time_cost", "mode", "source"],
+      "properties": {
+        "target": {"$ref": "#/$defs/target"},
+        "title": {"type": "string", "minLength": 1},
+        "prompt": {"type": "string", "minLength": 1},
+        "why": {"type": "string", "minLength": 1},
+        "time_cost": {"$ref": "#/$defs/time_cost"},
+        "mode": {"$ref": "#/$defs/mode"},
+        "source": {"$ref": "#/$defs/library_source"}
+      },
+      "additionalProperties": false
+    },
+    "plan_section": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/plan_item"}
+    },
+    "recommended_limits": {
+      "type": "object",
+      "required": ["doomscroll_replacements", "ragebait_replacements", "shame_replacements"],
+      "properties": {
+        "doomscroll_replacements": {"type": "integer", "minimum": 0, "maximum": 25},
+        "ragebait_replacements": {"type": "integer", "minimum": 0, "maximum": 25},
+        "shame_replacements": {"type": "integer", "minimum": 0, "maximum": 25}
+      },
+      "additionalProperties": false
+    },
+    "recommendation_output": {
+      "type": "object",
+      "required": [
+        "dope_version",
+        "profile_used",
+        "generated_at",
+        "local_first",
+        "recommendations",
+        "avoidance_summary"
+      ],
+      "properties": {
+        "dope_version": {"type": "string", "const": "0.4"},
+        "profile_used": {"type": "string", "minLength": 1},
+        "generated_at": {"type": "string", "minLength": 1},
+        "local_first": {"type": "boolean", "const": true},
+        "recommendations": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/recommendation_item"}
+        },
+        "avoidance_summary": {"$ref": "#/$defs/avoidance_summary"}
+      },
+      "additionalProperties": false
+    },
+    "daily_plan_output": {
+      "type": "object",
+      "required": [
+        "dope_version",
+        "profile_used",
+        "generated_at",
+        "local_first",
+        "morning",
+        "midday",
+        "evening",
+        "emergency_reset",
+        "recommended_limits"
+      ],
+      "properties": {
+        "dope_version": {"type": "string", "const": "0.4"},
+        "profile_used": {"type": "string", "minLength": 1},
+        "generated_at": {"type": "string", "minLength": 1},
+        "local_first": {"type": "boolean", "const": true},
+        "morning": {"$ref": "#/$defs/plan_section"},
+        "midday": {"$ref": "#/$defs/plan_section"},
+        "evening": {"$ref": "#/$defs/plan_section"},
+        "emergency_reset": {"$ref": "#/$defs/plan_section"},
+        "recommended_limits": {"$ref": "#/$defs/recommended_limits"},
+        "warnings": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

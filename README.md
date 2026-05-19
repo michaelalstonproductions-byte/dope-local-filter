@@ -1,12 +1,12 @@
-# DOPE v0.3
+# DOPE v0.4
 
 DOPE means **Dopamine-Oriented Positive Environment**.
 
-DOPE v0.3 is a local-first, opt-in personal reinforcement prototype. It is not a censorship engine, propaganda engine, forced positivity engine, or live platform integration. It uses transparent phrase/token heuristics to reduce harmful attention loops while preserving useful hard news and civic awareness.
+DOPE v0.4 is a local-first, opt-in personal reinforcement and positive content recommendation prototype. It is not censorship, propaganda, forced positivity, medical treatment, or a live platform integration. It uses transparent local heuristics and a local content library to help users replace harmful attention loops with healthy, interesting, constructive alternatives.
 
 ## Safety Rules
 
-DOPE v0.3 does **not**:
+DOPE v0.4 does **not**:
 
 - optimize for infinite scrolling
 - optimize for outrage
@@ -17,26 +17,28 @@ DOPE v0.3 does **not**:
 - upload analytics
 - use addictive ranking loops
 - block all negative news
+- claim medical treatment or forced brain rewiring
 
-DOPE v0.3 does:
+DOPE v0.4 does:
 
 - classify locally with transparent phrase/token heuristics
 - evaluate harmful categories before uplift
 - allow useful hard news when it is not ragebait or doomscroll framing
+- recommend from `dope_content_library.json` only
+- prioritize user goals and session health over novelty or engagement
 - support a local personal reinforcement profile
 - log every feed item decision locally
-- explain decisions in plain language
 - optionally track local session patterns in a JSON file
 
-Image and video handling is text/caption-only in v0.3. Confidence is heuristic confidence, not a model probability.
+Image and video handling is text/caption-only. Confidence is heuristic confidence, not a model probability.
 
 ## Categories, Labels, And Actions
 
-Primary categories remain compatible with v0.2:
+Primary categories remain compatible with v0.2/v0.3:
 
 `UPLIFT`, `NEUTRAL`, `TOXIC`, `RAGEBAIT`, `DOOMSCROLL`, `SHAME`, `VIOLENCE`, `SEXUALIZED`, `SCAM`
 
-Secondary labels can add context without changing the primary category contract:
+Secondary labels add context without changing the primary category contract:
 
 `CONSTRUCTIVE_NEWS`, `HARD_NEWS`, `POSITIVE_HISTORY`, `CIVIC_AWARENESS`
 
@@ -44,7 +46,24 @@ Actions:
 
 `ALLOW`, `SOFT_WARN`, `BLUR`, `BLOCK`, `REPLACE`
 
-## Output Contracts
+## CLI
+
+```bash
+cd "/Volumes/Logic/DOPE_V01"
+python3 dope_policy_engine.py sample_feed.json
+python3 dope_policy_engine.py sample_feed.json --config dope_controls.json
+python3 dope_policy_engine.py sample_feed.json --profile dope_profile.json
+python3 dope_policy_engine.py sample_feed.json --session-memory /tmp/dope_session_memory.json
+python3 dope_policy_engine.py sample_feed.json --recommend --profile dope_profile.json
+python3 dope_policy_engine.py sample_feed.json --recommend --session-memory /tmp/dope_session_memory.json
+python3 dope_policy_engine.py sample_feed.json --daily-plan --profile dope_profile.json
+python3 dope_policy_engine.py sample_feed.json --json --recommend --profile dope_profile.json
+python3 dope_policy_engine.py sample_feed.json --json --daily-plan --profile dope_profile.json
+```
+
+Malformed, unreadable, or non-object controls/profile JSON exits cleanly with code `2` and a `[DOPE CONFIG ERROR]` message on stderr. It does not print a Python traceback.
+
+## Classifier Output
 
 `classify_content()` in `dope_classifier.py` returns raw classifier output:
 
@@ -65,7 +84,9 @@ Actions:
 }
 ```
 
-`DopePolicyEngine.decide_content()` in `dope_policy_engine.py` returns policy output enriched with replacement text, profile context, explanations, optional session summary, and audit status:
+## Policy Output
+
+`DopePolicyEngine.decide_content()` returns policy output enriched with replacement text, profile context, explanations, optional session summary, and audit status:
 
 ```json
 {
@@ -83,6 +104,118 @@ Actions:
 ```
 
 `session_summary` is present when `--session-memory` is used.
+
+## Recommendation Mode
+
+`--recommend` evaluates the feed locally, then builds recommendations from `dope_content_library.json` only:
+
+```json
+{
+  "dope_version": "0.4",
+  "profile_used": "default",
+  "generated_at": "...",
+  "local_first": true,
+  "recommendations": [
+    {
+      "rank": 1,
+      "target": "constructive_news",
+      "title": "...",
+      "prompt": "...",
+      "why": "...",
+      "recommended_after": ["DOOMSCROLL"],
+      "time_cost": "5_min",
+      "mode": "read",
+      "source": "local_content_library"
+    }
+  ],
+  "avoidance_summary": {
+    "dominant_risk": "DOOMSCROLL",
+    "blocked_or_replaced_count": 0,
+    "reason": "..."
+  }
+}
+```
+
+Ranking is not engagement ranking. It gives priority to:
+
+- profile goals
+- repeated local session risks
+- short, non-overwhelming actions
+- constructive replacements after harmful categories
+
+Examples:
+
+- repeated `DOOMSCROLL` -> calm, constructive news, civic awareness, and practical action
+- repeated `RAGEBAIT` -> emotional regulation, learning, and civic awareness
+- repeated `SHAME` -> calm, fitness, gratitude, and one tiny action
+- `SCAM` -> verification habits and business discipline, not finance hype
+- `UPLIFT` or `POSITIVE_HISTORY` -> reinforce and suggest real-world follow-through
+
+## Daily Plan Mode
+
+`--daily-plan` creates a simple local plan:
+
+```json
+{
+  "dope_version": "0.4",
+  "profile_used": "default",
+  "generated_at": "...",
+  "local_first": true,
+  "morning": [],
+  "midday": [],
+  "evening": [],
+  "emergency_reset": [],
+  "recommended_limits": {
+    "doomscroll_replacements": 5,
+    "ragebait_replacements": 5,
+    "shame_replacements": 5
+  }
+}
+```
+
+The plan is intentionally small and local. It is not medical advice.
+
+## Local Profile
+
+`dope_profile.json` controls personal reinforcement preferences:
+
+- primary goals such as learning, creating, fitness, calm, family, spirituality, business progress, and emotional regulation
+- sensitive areas such as doomscrolling, ragebait, shame, and scams
+- preferences for hard news, constructive news, positive history, learning, faith/spirituality, business, fitness, and family
+- replacement tone and audit level
+
+The profile is local JSON only. It is not uploaded or used to call any external service.
+
+## Local Content Library
+
+`dope_content_library.json` contains local replacement suggestions for:
+
+`learning`, `creating`, `working`, `fitness`, `calm`, `family`, `spirituality`, `business_progress`, `emotional_regulation`, `positive_history`, `constructive_news`, `civic_awareness`, `gratitude`, `discipline`, and `emergency_reset`.
+
+No external links are required.
+
+## Session Memory
+
+`dope_session_memory.py` can track local session patterns when `--session-memory` is provided:
+
+```json
+{
+  "dope_version": "0.4",
+  "session_started_at": "...",
+  "items_seen": 0,
+  "category_counts": {},
+  "action_counts": {},
+  "replacement_counts": {},
+  "dominant_risk": "",
+  "positive_targets_served": {},
+  "last_replacements": [],
+  "local_first": true
+}
+```
+
+Session memory is a local JSON file. No external storage is used. Malformed memory values are sanitized back into safe counters.
+
+## Audit Records
 
 Audit records are JSONL and include local-first safety metadata, profile context, explanation, session summary, and validation errors:
 
@@ -105,62 +238,9 @@ Audit records are JSONL and include local-first safety metadata, profile context
     "outrage_optimization": false,
     "harmful_exposure_increase": false
   },
-  "dope_version": "0.3"
+  "dope_version": "0.4"
 }
 ```
-
-## CLI
-
-```bash
-cd "/Volumes/Logic/DOPE_V01"
-python3 dope_policy_engine.py sample_feed.json
-python3 dope_policy_engine.py sample_feed.json --config dope_controls.json
-python3 dope_policy_engine.py sample_feed.json --profile dope_profile.json
-python3 dope_policy_engine.py sample_feed.json --config dope_controls.json --profile dope_profile.json
-python3 dope_policy_engine.py sample_feed.json --audit-path /tmp/dope_audit.jsonl
-python3 dope_policy_engine.py sample_feed.json --json --profile dope_profile.json
-python3 dope_policy_engine.py sample_feed.json --session-memory /tmp/dope_session_memory.json
-```
-
-Malformed, unreadable, or non-object controls/profile JSON exits cleanly with code `2` and a `[DOPE CONFIG ERROR]` message on stderr. It does not print a Python traceback.
-
-## Local Profile
-
-`dope_profile.json` controls personal reinforcement preferences:
-
-- primary goals such as learning, creating, fitness, calm, family, spirituality, business progress, and emotional regulation
-- sensitive areas such as doomscrolling, ragebait, shame, and scams
-- preferences for hard news, constructive news, positive history, learning, faith/spirituality, business, fitness, and family
-- replacement tone and audit level
-
-The profile is local JSON only. It is not uploaded or used to call any external service.
-
-## Local Content Library
-
-`dope_content_library.json` contains local replacement suggestions for:
-
-`learning`, `creating`, `working`, `fitness`, `calm`, `family`, `spirituality`, `business_progress`, `emotional_regulation`, `positive_history`, `constructive_news`, `civic_awareness`, `gratitude`, and `discipline`.
-
-## Session Memory
-
-`dope_session_memory.py` can track local session patterns when `--session-memory` is provided:
-
-```json
-{
-  "dope_version": "0.3",
-  "session_started_at": "...",
-  "items_seen": 0,
-  "category_counts": {},
-  "action_counts": {},
-  "replacement_counts": {},
-  "dominant_risk": "",
-  "positive_targets_served": {},
-  "last_replacements": [],
-  "local_first": true
-}
-```
-
-Session memory is a local JSON file. No external storage is used.
 
 ## Files
 
@@ -170,7 +250,10 @@ Session memory is a local JSON file. No external storage is used.
 /Volumes/Logic/DOPE_V01/dope_reinforcement_engine.py
 /Volumes/Logic/DOPE_V01/dope_session_memory.py
 /Volumes/Logic/DOPE_V01/dope_explain.py
+/Volumes/Logic/DOPE_V01/dope_recommender.py
+/Volumes/Logic/DOPE_V01/dope_daily_plan.py
 /Volumes/Logic/DOPE_V01/dope_schema.json
+/Volumes/Logic/DOPE_V01/dope_recommendation_schema.json
 /Volumes/Logic/DOPE_V01/dope_controls.json
 /Volumes/Logic/DOPE_V01/dope_profile.json
 /Volumes/Logic/DOPE_V01/dope_content_library.json
@@ -181,10 +264,10 @@ Session memory is a local JSON file. No external storage is used.
 
 ## Limitations
 
-- v0.3 uses transparent keyword and phrase heuristics only.
+- v0.4 uses transparent keyword and phrase heuristics only.
+- Recommendations are local suggestions, not predictions of what will make content engaging.
 - Image and video understanding is limited to supplied captions/text.
 - Slang, coded language, sarcasm, misspellings, and mixed-language content can bypass simple heuristics.
 - Confidence is heuristic confidence, not a statistical model probability.
 - Session memory is local and simple; it is not a learned model.
 - DOPE intentionally avoids engagement optimization and live social platform APIs.
-- `__pycache__` files are generated Python bytecode and can be ignored during simple grep-based safety scans.

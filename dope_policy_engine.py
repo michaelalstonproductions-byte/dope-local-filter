@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.3 - Feed decision engine with local audit log.
+DOPE v0.4 - Feed decision engine with local audit log.
 
 classify_content() returns raw classifier output. DopePolicyEngine.decide_content()
 returns policy output enriched with replacement text and audit status.
@@ -17,8 +17,10 @@ from typing import Any, Dict, Iterable, List, Mapping
 
 from dope_classifier import DEFAULT_CONTROLS, DOPE_VERSION, normalize_controls, parse_bool, required_output
 from dope_classifier import classify_content
+from dope_daily_plan import build_daily_plan
 from dope_explain import explain_decision, explain_replacement
-from dope_reinforcement_engine import attach_replacement, replacement_source_for_decision
+from dope_recommender import build_recommendations
+from dope_reinforcement_engine import attach_replacement, load_content_library, replacement_source_for_decision
 from dope_session_memory import load_session_memory, save_session_memory, summarize_session, update_session_memory
 
 
@@ -319,13 +321,42 @@ def print_report(report: Dict[str, Any]) -> None:
     print(f"\nAudit log path: {report['audit_log_path']}")
 
 
+def print_recommendation_report(recommendations: Dict[str, Any]) -> None:
+    print("=== DOPE RECOMMENDATIONS ===")
+    print(f"Profile: {recommendations.get('profile_used', 'default')}")
+    avoidance = recommendations.get("avoidance_summary", {})
+    print(f"Dominant risk: {avoidance.get('dominant_risk', '') or 'none'}")
+    for row in recommendations.get("recommendations", []):
+        print(
+            f"- #{row.get('rank')} {row.get('target')}: {row.get('title')} "
+            f"({row.get('time_cost')}, {row.get('mode')})"
+        )
+        print(f"  {row.get('prompt')}")
+
+
+def print_daily_plan(plan: Dict[str, Any]) -> None:
+    print("=== DOPE DAILY PLAN ===")
+    print(f"Profile: {plan.get('profile_used', 'default')}")
+    for section in ("morning", "midday", "evening", "emergency_reset"):
+        print(f"\n{section.replace('_', ' ').title()}:")
+        rows = plan.get(section, [])
+        if not rows:
+            print("- None")
+        for row in rows:
+            print(f"- {row.get('title')}: {row.get('prompt')}")
+    print("\nRecommended limits:")
+    print(json.dumps(plan.get("recommended_limits", {}), indent=2, sort_keys=True))
+
+
 def parse_args(argv: List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="DOPE v0.3 local-first content policy engine")
+    parser = argparse.ArgumentParser(description="DOPE v0.4 local-first content policy engine")
     parser.add_argument("feed_path", help="Path to a JSON feed file")
     parser.add_argument("--config", help="Optional local JSON controls config")
     parser.add_argument("--profile", help="Optional local JSON reinforcement profile")
     parser.add_argument("--audit-path", help="Optional JSONL audit log path")
     parser.add_argument("--session-memory", help="Optional local JSON session memory path")
+    parser.add_argument("--recommend", action="store_true", help="Build local positive recommendations")
+    parser.add_argument("--daily-plan", action="store_true", help="Build a simple local daily plan")
     parser.add_argument("--strictness", choices=["low", "medium", "high"])
     parser.add_argument("--allow-spirituality", type=parse_bool)
     parser.add_argument("--allow-business", type=parse_bool)
@@ -354,6 +385,26 @@ def main(argv: List[str] | None = None) -> int:
         session_memory_path=args.session_memory,
     )
     results = engine.evaluate_feed(items)
+    content_library = load_content_library()
+    if args.recommend:
+        recommendations = build_recommendations(
+            results,
+            profile,
+            content_library,
+            session_memory=engine.session_memory,
+        )
+        if args.json:
+            print(json.dumps(recommendations, indent=2, sort_keys=True))
+        else:
+            print_recommendation_report(recommendations)
+        return 0
+    if args.daily_plan:
+        plan = build_daily_plan(profile, content_library, session_memory=engine.session_memory)
+        if args.json:
+            print(json.dumps(plan, indent=2, sort_keys=True))
+        else:
+            print_daily_plan(plan)
+        return 0
     if args.json:
         print(json.dumps(results, indent=2, sort_keys=True))
     else:

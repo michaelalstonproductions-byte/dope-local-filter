@@ -1,100 +1,107 @@
 {
   "learning": [
-    {
-      "title": "Learn one useful step",
-      "prompt": "Pick one concept you can understand in five minutes and write the takeaway.",
-      "why": "Learning redirects attention toward capability."
-    }
+    {"title": "Learn one useful step", "prompt": "Pick one concept you can understand in five minutes and write the takeaway.", "why": "Learning redirects attention toward capability.", "time_cost": "5_min", "mode": "read"},
+    {"title": "Explain it simply", "prompt": "Choose one idea and explain it in three plain sentences.", "why": "Teaching the idea back makes it stick.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Skill micro-drill", "prompt": "Practice one small skill rep without opening another feed.", "why": "Small reps build competence without needing novelty.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Question then answer", "prompt": "Write one question you genuinely want answered and find the shortest local note or book passage that helps.", "why": "Curiosity is healthier than compulsive scanning.", "time_cost": "15_min", "mode": "read"},
+    {"title": "Save a useful lesson", "prompt": "Capture one durable lesson in your own words.", "why": "A saved lesson gives the attention loop a constructive endpoint.", "time_cost": "under_2_min", "mode": "reflect"}
   ],
   "creating": [
-    {
-      "title": "Make one small artifact",
-      "prompt": "Draft one paragraph, sketch, outline, hook, or prototype improvement.",
-      "why": "Creating turns energy into something durable."
-    }
+    {"title": "Make one small artifact", "prompt": "Draft one paragraph, sketch, outline, hook, or prototype improvement.", "why": "Creating turns energy into something durable.", "time_cost": "15_min", "mode": "create"},
+    {"title": "Revise one thing", "prompt": "Open an existing draft and improve one sentence, frame, or detail.", "why": "Revision is a low-friction way back into creation.", "time_cost": "5_min", "mode": "create"},
+    {"title": "Capture the next idea", "prompt": "Write one idea you can build later, then close the loop.", "why": "Capture prevents ideas from turning into endless browsing.", "time_cost": "under_2_min", "mode": "create"},
+    {"title": "Ship a tiny version", "prompt": "Make the smallest publishable version of the thing you are avoiding.", "why": "Small shipping beats passive consumption.", "time_cost": "30_min", "mode": "create"},
+    {"title": "Constraint sprint", "prompt": "Create something using only what is already open or available.", "why": "Constraints reduce decision fatigue.", "time_cost": "15_min", "mode": "create"}
   ],
   "working": [
-    {
-      "title": "Close one loop",
-      "prompt": "Choose a visible task and move it forward for ten focused minutes.",
-      "why": "Work progress lowers background stress."
-    }
+    {"title": "Close one loop", "prompt": "Choose a visible task and move it forward for ten focused minutes.", "why": "Work progress lowers background stress.", "time_cost": "15_min", "mode": "work"},
+    {"title": "Send the message", "prompt": "Send or draft the practical message you have been delaying.", "why": "One closed communication loop can free attention.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Clear the next step", "prompt": "Write the next action for your most important project.", "why": "Clarity is a healthy replacement for restless checking.", "time_cost": "under_2_min", "mode": "work"},
+    {"title": "Focused block", "prompt": "Set a 15-minute timer and work on the task already chosen.", "why": "Time-boxing keeps effort bounded and non-addictive.", "time_cost": "15_min", "mode": "work"},
+    {"title": "Tidy the workspace", "prompt": "Remove one source of friction from your physical or digital workspace.", "why": "A clearer environment supports calmer attention.", "time_cost": "5_min", "mode": "work"}
   ],
   "fitness": [
-    {
-      "title": "Move before more media",
-      "prompt": "Walk, stretch, or do one low-friction movement set.",
-      "why": "Movement helps reset attention and mood."
-    }
+    {"title": "Move before more media", "prompt": "Walk, stretch, or do one low-friction movement set.", "why": "Movement helps reset attention and mood.", "time_cost": "5_min", "mode": "move"},
+    {"title": "Three-minute reset", "prompt": "Do three minutes of mobility or bodyweight movement.", "why": "Short movement interrupts stuck scrolling without overwhelm.", "time_cost": "under_2_min", "mode": "move"},
+    {"title": "Hydrate and stand", "prompt": "Drink water and stand away from the screen for one minute.", "why": "A physical state change makes the next choice easier.", "time_cost": "under_2_min", "mode": "move"},
+    {"title": "Walk outside", "prompt": "Take a short walk and name five things you can see.", "why": "Outdoor cues pull attention back into the real world.", "time_cost": "15_min", "mode": "move"},
+    {"title": "Prepare the next workout", "prompt": "Set out shoes, clothes, or the first exercise for later.", "why": "Preparation lowers the barrier to healthy action.", "time_cost": "5_min", "mode": "move"}
   ],
   "calm": [
-    {
-      "title": "Settle the nervous system",
-      "prompt": "Take six slow breaths and relax your shoulders before continuing.",
-      "why": "Calm gives you more choice over the next click."
-    }
+    {"title": "Settle the nervous system", "prompt": "Take six slow breaths and relax your shoulders before continuing.", "why": "Calm gives you more choice over the next click.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Name what is happening", "prompt": "Say: I am noticing an urge to keep scrolling, and I can choose the next action.", "why": "Naming the loop weakens it without shame.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Look away reset", "prompt": "Look at something across the room and unclench your jaw.", "why": "Visual distance helps break screen intensity.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "One quiet minute", "prompt": "Set the device down and take one quiet minute.", "why": "Stillness creates space between impulse and action.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Slow exhale", "prompt": "Breathe in normally and make the exhale longer for five rounds.", "why": "Longer exhales can support calm attention.", "time_cost": "under_2_min", "mode": "reflect"}
   ],
   "family": [
-    {
-      "title": "Strengthen one bond",
-      "prompt": "Send a specific kind check-in to someone close to you.",
-      "why": "Healthy connection competes with empty scrolling."
-    }
+    {"title": "Strengthen one bond", "prompt": "Send a specific kind check-in to someone close to you.", "why": "Healthy connection competes with empty scrolling.", "time_cost": "5_min", "mode": "connect"},
+    {"title": "Plan one helpful thing", "prompt": "Choose one small action that makes home life easier today.", "why": "Service redirects attention into belonging.", "time_cost": "5_min", "mode": "connect"},
+    {"title": "Ask a better question", "prompt": "Ask someone close: what would help today?", "why": "Simple questions create real connection.", "time_cost": "under_2_min", "mode": "connect"},
+    {"title": "Share appreciation", "prompt": "Name one specific thing you appreciate about a family member.", "why": "Specific appreciation reinforces healthy bonds.", "time_cost": "under_2_min", "mode": "connect"},
+    {"title": "Schedule real time", "prompt": "Put one family or close-relationship block on the calendar.", "why": "Scheduled connection beats passive availability.", "time_cost": "5_min", "mode": "connect"}
   ],
   "spirituality": [
-    {
-      "title": "Pause for grounding",
-      "prompt": "Take a short prayer, gratitude, or reflection pause.",
-      "why": "Spiritual grounding can restore perspective without forcing positivity."
-    }
+    {"title": "Pause for grounding", "prompt": "Take a short prayer, gratitude, or reflection pause.", "why": "Spiritual grounding can restore perspective without forcing positivity.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Recall one line", "prompt": "Bring to mind one line of wisdom, scripture, or reflection that steadies you.", "why": "A remembered line can interrupt reactive attention.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Practice patience", "prompt": "Choose one patient response you can make today.", "why": "Spiritual practice becomes real through action.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Gratitude prayer", "prompt": "Name one burden and one gift, then release the next click.", "why": "This holds hard reality and hope together.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Serve quietly", "prompt": "Do one quiet helpful act without announcing it.", "why": "Service moves attention from performance to purpose.", "time_cost": "15_min", "mode": "connect"}
   ],
   "business_progress": [
-    {
-      "title": "Move a real offer forward",
-      "prompt": "Write the next business decision, client action, invoice step, or launch task.",
-      "why": "Business progress redirects urgency into useful action."
-    }
+    {"title": "Move a real offer forward", "prompt": "Write the next business decision, client action, invoice step, or launch task.", "why": "Business progress redirects urgency into useful action.", "time_cost": "15_min", "mode": "work"},
+    {"title": "Verification habit", "prompt": "Before considering any money claim, write the source, incentive, and proof you would need.", "why": "Verification protects attention and finances from hype.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Revenue reality check", "prompt": "Identify one real customer problem you can help solve today.", "why": "Real business progress is grounded in service, not hype.", "time_cost": "15_min", "mode": "work"},
+    {"title": "Send one useful follow-up", "prompt": "Follow up with one client, lead, collaborator, or invoice.", "why": "A real follow-up beats speculative finance content.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Define the offer", "prompt": "Write your offer in one clear sentence.", "why": "Clarity is better than chasing get-rich signals.", "time_cost": "5_min", "mode": "work"}
   ],
   "emotional_regulation": [
-    {
-      "title": "Name and lower the intensity",
-      "prompt": "Write one sentence: what happened, what I feel, what I will do next.",
-      "why": "Naming emotion reduces the pull of reactive loops."
-    }
+    {"title": "Name and lower the intensity", "prompt": "Write one sentence: what happened, what I feel, what I will do next.", "why": "Naming emotion reduces the pull of reactive loops.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Delay the reaction", "prompt": "Wait two minutes before responding or clicking further.", "why": "Delay creates room for choice.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Separate fact from story", "prompt": "Write one fact and one interpretation you are adding.", "why": "This lowers the grip of outrage and shame.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Choose the next useful action", "prompt": "Pick one small action that helps Future You.", "why": "Action gives emotion a healthy channel.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Body check", "prompt": "Notice jaw, shoulders, breath, and hands; soften one area.", "why": "Physical awareness can reduce reactive intensity.", "time_cost": "under_2_min", "mode": "reflect"}
   ],
   "positive_history": [
-    {
-      "title": "Learn one story of resilience",
-      "prompt": "Read about someone who overcame hardship and write one lesson you can use today.",
-      "why": "Positive history builds perspective without doomscrolling."
-    }
+    {"title": "Learn one story of resilience", "prompt": "Read about someone who overcame hardship and write one lesson you can use today.", "why": "Positive history builds perspective without doomscrolling.", "time_cost": "15_min", "mode": "read"},
+    {"title": "Inventor lesson", "prompt": "Study one inventor or builder and note the repeated habit behind their work.", "why": "Useful history points toward practice, not passive awe.", "time_cost": "15_min", "mode": "read"},
+    {"title": "Recovery story", "prompt": "Find one story of rebuilding after loss and write the first practical step they took.", "why": "Recovery stories make hardship concrete without helplessness.", "time_cost": "15_min", "mode": "read"},
+    {"title": "Civil courage", "prompt": "Read a short account of civil courage and write the value it required.", "why": "Courage history can strengthen civic awareness without ragebait.", "time_cost": "15_min", "mode": "read"},
+    {"title": "Ancestor perspective", "prompt": "Write one hardship your ancestors or elders faced and one strength you can carry forward.", "why": "Perspective can reduce panic and increase responsibility.", "time_cost": "5_min", "mode": "reflect"}
   ],
   "constructive_news": [
-    {
-      "title": "Turn news into one useful action",
-      "prompt": "Read the factual update, identify one practical next step, then stop scanning.",
-      "why": "Constructive news keeps awareness without helplessness framing."
-    }
+    {"title": "Turn news into one useful action", "prompt": "Read the factual update, identify one practical next step, then stop scanning.", "why": "Constructive news keeps awareness without helplessness framing.", "time_cost": "5_min", "mode": "read"},
+    {"title": "Find the resource", "prompt": "Look for the official resource, safety step, or community response in the story.", "why": "Resources matter more than repeated alarm.", "time_cost": "5_min", "mode": "read"},
+    {"title": "Action boundary", "prompt": "Decide whether this news asks for action, prayer, preparation, or simply awareness.", "why": "Boundaries keep news from becoming doomscrolling.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "One update only", "prompt": "Read one factual update and then return to your chosen task.", "why": "A single update protects awareness without feeding compulsion.", "time_cost": "5_min", "mode": "read"},
+    {"title": "Help locally", "prompt": "If the issue is local, write one grounded way to help or prepare.", "why": "Real-world action converts concern into agency.", "time_cost": "15_min", "mode": "work"}
   ],
   "civic_awareness": [
-    {
-      "title": "Use civic information cleanly",
-      "prompt": "Separate facts from framing and note whether there is a local action to take.",
-      "why": "Civic awareness is useful when it does not become an outrage loop."
-    }
+    {"title": "Use civic information cleanly", "prompt": "Separate facts from framing and note whether there is a local action to take.", "why": "Civic awareness is useful when it does not become an outrage loop.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "Check the meeting", "prompt": "Identify one relevant meeting, vote, deadline, or public notice.", "why": "Civic action is healthier than outrage cycling.", "time_cost": "5_min", "mode": "read"},
+    {"title": "Name the decision-maker", "prompt": "Write who can actually act on the issue.", "why": "Knowing responsibility reduces helpless anger.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "One respectful message", "prompt": "Draft a clear, respectful civic comment or question if action is warranted.", "why": "Respectful action beats reactive posting.", "time_cost": "15_min", "mode": "work"},
+    {"title": "Civic closeout", "prompt": "Write what you learned, what you can do, and when to stop reading.", "why": "A closeout prevents civic awareness from becoming a loop.", "time_cost": "5_min", "mode": "reflect"}
   ],
   "gratitude": [
-    {
-      "title": "Notice what is still good",
-      "prompt": "Name three concrete things that are working today.",
-      "why": "Gratitude balances attention without denying hard reality."
-    }
+    {"title": "Notice what is still good", "prompt": "Name three concrete things that are working today.", "why": "Gratitude balances attention without denying hard reality.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Thank one person", "prompt": "Send one specific thank-you message.", "why": "Gratitude becomes stronger when expressed.", "time_cost": "under_2_min", "mode": "connect"},
+    {"title": "Good evidence", "prompt": "Write one piece of evidence that your life is not only this feed.", "why": "This restores proportion.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Small beauty", "prompt": "Look for one beautiful or orderly thing nearby.", "why": "Attention can be trained toward what is life-giving.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Gratitude and action", "prompt": "Name one gift and one action that honors it.", "why": "Gratitude pairs well with responsibility.", "time_cost": "5_min", "mode": "reflect"}
   ],
   "discipline": [
-    {
-      "title": "Choose the next right action",
-      "prompt": "Do the smallest disciplined action available for five minutes.",
-      "why": "Discipline converts distraction energy into agency."
-    }
+    {"title": "Choose the next right action", "prompt": "Do the smallest disciplined action available for five minutes.", "why": "Discipline converts distraction energy into agency.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Phone down rule", "prompt": "Put the device down until one real-world action is complete.", "why": "A simple rule is easier than negotiating with every impulse.", "time_cost": "under_2_min", "mode": "work"},
+    {"title": "Verify before believing", "prompt": "For any exciting claim, write what proof would change your mind.", "why": "Disciplined verification blocks scam loops.", "time_cost": "5_min", "mode": "reflect"},
+    {"title": "One tiny promise", "prompt": "Make and keep one tiny promise to yourself right now.", "why": "Trust is rebuilt through kept promises.", "time_cost": "5_min", "mode": "work"},
+    {"title": "Stop at enough", "prompt": "Decide the enough point before consuming more.", "why": "Stopping points prevent recommendation loops.", "time_cost": "under_2_min", "mode": "reflect"}
+  ],
+  "emergency_reset": [
+    {"title": "Immediate reset", "prompt": "Set the device down, breathe slowly six times, and stand up.", "why": "A body reset interrupts compulsive loops quickly.", "time_cost": "under_2_min", "mode": "move"},
+    {"title": "Leave the feed", "prompt": "Close the feed and open a real-world task already chosen.", "why": "Changing context is often easier than winning a willpower contest.", "time_cost": "under_2_min", "mode": "work"},
+    {"title": "Name the loop", "prompt": "Say: this is ragebait, doomscrolling, shame, or distraction; I can exit.", "why": "Clear naming turns the loop into an object, not an identity.", "time_cost": "under_2_min", "mode": "reflect"},
+    {"title": "Reach out", "prompt": "Message someone safe: I am stepping away from a bad loop.", "why": "Connection helps break isolation.", "time_cost": "5_min", "mode": "connect"},
+    {"title": "One grounding task", "prompt": "Wash a dish, take out trash, walk outside, or tidy one surface.", "why": "Concrete action restores agency.", "time_cost": "5_min", "mode": "work"}
   ]
 }

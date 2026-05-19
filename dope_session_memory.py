@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Local-only session memory for DOPE v0.3."""
+"""Local-only session memory for DOPE v0.4."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict
 
 
-DOPE_VERSION = "0.3"
+DOPE_VERSION = "0.4"
 HARMFUL_CATEGORIES = {"TOXIC", "RAGEBAIT", "DOOMSCROLL", "SHAME", "VIOLENCE", "SEXUALIZED", "SCAM"}
 
 
@@ -44,8 +44,11 @@ def load_session_memory(path: str | pathlib.Path) -> Dict[str, Any]:
     for key in ("category_counts", "action_counts", "replacement_counts", "positive_targets_served"):
         if not isinstance(memory.get(key), dict):
             memory[key] = {}
+        else:
+            memory[key] = _sanitize_counter(memory[key])
     if not isinstance(memory.get("last_replacements"), list):
         memory["last_replacements"] = []
+    memory["items_seen"] = _safe_int(memory.get("items_seen"), 0)
     return memory
 
 
@@ -57,14 +60,26 @@ def save_session_memory(memory: Dict[str, Any], path: str | pathlib.Path) -> Non
         f.write("\n")
 
 
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return default
+    return max(0, parsed)
+
+
+def _sanitize_counter(counter: Dict[str, Any]) -> Dict[str, int]:
+    return {str(key): _safe_int(value, 0) for key, value in counter.items() if str(key)}
+
+
 def _increment(counter: Dict[str, Any], key: str) -> None:
     if not key:
         return
-    counter[key] = int(counter.get(key, 0)) + 1
+    counter[key] = _safe_int(counter.get(key), 0) + 1
 
 
 def _dominant_risk(category_counts: Dict[str, Any]) -> str:
-    candidates = {k: int(v) for k, v in category_counts.items() if k in HARMFUL_CATEGORIES}
+    candidates = {k: _safe_int(v, 0) for k, v in category_counts.items() if k in HARMFUL_CATEGORIES}
     if not candidates:
         return ""
     return max(sorted(candidates), key=lambda key: candidates[key])
@@ -80,7 +95,12 @@ def update_session_memory(memory: Dict[str, Any], result: Dict[str, Any]) -> Dic
     source = str(result.get("replacement_source", "") or "")
     replacement = str(decision.get("positive_replacement", "") or "")
 
-    updated["items_seen"] = int(updated.get("items_seen", 0)) + 1
+    for key in ("category_counts", "action_counts", "replacement_counts", "positive_targets_served"):
+        if not isinstance(updated.get(key), dict):
+            updated[key] = {}
+        updated[key] = _sanitize_counter(updated[key])
+
+    updated["items_seen"] = _safe_int(updated.get("items_seen"), 0) + 1
     _increment(updated["category_counts"], category)
     _increment(updated["action_counts"], action)
     if source:
@@ -101,11 +121,13 @@ def summarize_session(memory: Dict[str, Any]) -> Dict[str, Any]:
     action_counts = memory.get("action_counts") if isinstance(memory, dict) else {}
     category_counts = category_counts if isinstance(category_counts, dict) else {}
     action_counts = action_counts if isinstance(action_counts, dict) else {}
-    top_category = max(sorted(category_counts), key=lambda key: int(category_counts[key])) if category_counts else ""
-    top_action = max(sorted(action_counts), key=lambda key: int(action_counts[key])) if action_counts else ""
+    category_counts = _sanitize_counter(category_counts)
+    action_counts = _sanitize_counter(action_counts)
+    top_category = max(sorted(category_counts), key=lambda key: category_counts[key]) if category_counts else ""
+    top_action = max(sorted(action_counts), key=lambda key: action_counts[key]) if action_counts else ""
     return {
         "dope_version": DOPE_VERSION,
-        "items_seen": int(memory.get("items_seen", 0)) if isinstance(memory, dict) else 0,
+        "items_seen": _safe_int(memory.get("items_seen"), 0) if isinstance(memory, dict) else 0,
         "dominant_risk": str(memory.get("dominant_risk", "")) if isinstance(memory, dict) else "",
         "top_category": top_category,
         "top_action": top_action,
