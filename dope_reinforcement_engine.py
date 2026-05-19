@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.2 - Positive replacement engine.
+DOPE v0.3 - Positive replacement engine.
 
 This module intentionally does not rank by engagement. Replacements are chosen
 from healthy domains and lightly rotated by category to avoid a single loop.
@@ -9,6 +9,8 @@ from healthy domains and lightly rotated by category to avoid a single loop.
 from __future__ import annotations
 
 import hashlib
+import json
+import pathlib
 from typing import Any, Dict, List
 
 from dope_classifier import normalize_controls
@@ -51,11 +53,31 @@ HEALTHY_REPLACEMENTS = {
         "Name the feeling, lower the intensity, and choose the next useful action.",
         "Journal one sentence: what happened, what I feel, what I will do next.",
     ],
+    "positive_history": [
+        "Read one short story of resilience and write one lesson you can use today.",
+        "Look up one builder, inventor, or reformer and note the habit that made them durable.",
+    ],
+    "constructive_news": [
+        "Read one constructive update, then write the one practical action it suggests.",
+        "Switch from crisis scanning to one verified resource with a clear next step.",
+    ],
+    "civic_awareness": [
+        "Save one factual civic update and identify the practical local action, if any.",
+        "Check the source, separate facts from framing, and move on after the useful part.",
+    ],
+    "gratitude": [
+        "Name three concrete things that are still working today.",
+        "Send one specific thank-you or appreciation message.",
+    ],
+    "discipline": [
+        "Choose the next right action and do it for ten focused minutes.",
+        "Make the smallest disciplined move available right now.",
+    ],
 }
 
 CATEGORY_DOMAIN_MAP = {
     "RAGEBAIT": ["calm", "emotional_regulation", "learning"],
-    "DOOMSCROLL": ["calm", "fitness", "family"],
+    "DOOMSCROLL": ["constructive_news", "calm", "civic_awareness"],
     "SHAME": ["emotional_regulation", "fitness", "family"],
     "TOXIC": ["calm", "working", "creating"],
     "VIOLENCE": ["calm", "family", "spirituality"],
@@ -64,6 +86,9 @@ CATEGORY_DOMAIN_MAP = {
     "NEUTRAL": ["learning", "creating", "working"],
     "UPLIFT": ["creating", "working", "family"],
 }
+
+PROJECT_DIR = pathlib.Path(__file__).resolve().parent
+DEFAULT_CONTENT_LIBRARY_PATH = PROJECT_DIR / "dope_content_library.json"
 
 
 def _allowed_domains(user_controls: Dict[str, Any] | None) -> List[str]:
@@ -94,17 +119,70 @@ def positive_replacement(category: str, text: str = "", user_controls: Dict[str,
     return choices[int(digest[4:8], 16) % len(choices)]
 
 
+def load_content_library(path: str | pathlib.Path | None = None) -> Dict[str, Any]:
+    library_path = pathlib.Path(path) if path else DEFAULT_CONTENT_LIBRARY_PATH
+    try:
+        with library_path.open("r", encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def replacement_source_for_decision(decision: Dict[str, Any]) -> str:
+    labels = {str(label) for label in decision.get("labels", [])}
+    category = str(decision.get("category", "NEUTRAL"))
+    if "POSITIVE_HISTORY" in labels:
+        return "positive_history"
+    if "CONSTRUCTIVE_NEWS" in labels:
+        return "constructive_news"
+    if "CIVIC_AWARENESS" in labels or "HARD_NEWS" in labels:
+        return "civic_awareness"
+    if category == "DOOMSCROLL":
+        return "constructive_news"
+    if category in {"RAGEBAIT", "TOXIC", "VIOLENCE"}:
+        return "calm"
+    if category == "SHAME":
+        return "emotional_regulation"
+    if category == "SCAM":
+        return "business_progress"
+    if category == "SEXUALIZED":
+        return "discipline"
+    if category == "UPLIFT":
+        return "gratitude"
+    return ""
+
+
+def library_replacement(source: str, text: str = "", path: str | pathlib.Path | None = None) -> str:
+    if not source:
+        return ""
+    library = load_content_library(path)
+    entries = library.get(source)
+    if not isinstance(entries, list) or not entries:
+        return ""
+    key = f"{source}:{text}".encode("utf-8", errors="replace")
+    digest = hashlib.sha256(key).hexdigest()
+    entry = entries[int(digest[:4], 16) % len(entries)]
+    if isinstance(entry, dict):
+        title = str(entry.get("title", "")).strip()
+        prompt = str(entry.get("prompt", "")).strip()
+        if title and prompt:
+            return f"{title}: {prompt}"
+        return title or prompt
+    return str(entry)
+
+
 def attach_replacement(decision: Dict[str, Any], content: Dict[str, Any], user_controls: Dict[str, Any] | None = None) -> Dict[str, Any]:
     result = dict(decision)
+    source = replacement_source_for_decision(result)
     if result.get("action") in {"SOFT_WARN", "BLUR", "BLOCK", "REPLACE"}:
-        result["positive_replacement"] = positive_replacement(
-            str(result.get("category", "NEUTRAL")),
-            str(content.get("text", "")),
-            user_controls,
+        text = str(content.get("text", ""))
+        result["positive_replacement"] = library_replacement(source, text) or positive_replacement(
+            str(result.get("category", "NEUTRAL")), text, user_controls
         )
     else:
         result["positive_replacement"] = ""
     return result
 
 
-__all__ = ["attach_replacement", "positive_replacement"]
+__all__ = ["attach_replacement", "library_replacement", "positive_replacement", "replacement_source_for_decision"]

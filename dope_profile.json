@@ -1,0 +1,33 @@
+{
+  "dope_version": "0.3",
+  "profile_name": "default",
+  "primary_goals": [
+    "learn",
+    "create",
+    "fitness",
+    "calm",
+    "family",
+    "spirituality",
+    "business_progress",
+    "emotional_regulation"
+  ],
+  "sensitive_areas": [
+    "doomscrolling",
+    "ragebait",
+    "shame",
+    "scams"
+  ],
+  "content_preferences": {
+    "allow_hard_news": true,
+    "prefer_constructive_news": true,
+    "prefer_positive_history": true,
+    "prefer_learning": true,
+    "prefer_faith_spirituality": true,
+    "prefer_business": true,
+    "prefer_fitness": true,
+    "prefer_family": true
+  },
+  "replacement_style": "firm_but_kind",
+  "daily_reinforcement_limit": 25,
+  "audit_level": "full"
+}

@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "dope-content-decision-v0.2",
-  "title": "DOPE v0.2 Content Decision",
-  "description": "Schema for raw classifier decisions. Policy engine results wrap this decision with index, content, audit_status, and audit_path.",
+  "$id": "dope-content-decision-v0.3",
+  "title": "DOPE v0.3 Content Decision",
+  "description": "Schema for raw classifier decisions. Policy engine results wrap this decision with index, content, profile_used, explanation, replacement_source, optional session_summary, audit_status, and audit_path.",
   "type": "object",
   "required": [
     "score",
@@ -23,7 +23,8 @@
     "confidence": {
       "type": "number",
       "minimum": 0,
-      "maximum": 1
+      "maximum": 1,
+      "description": "Transparent heuristic confidence, not a learned probability."
     },
     "category": {
       "type": "string",
@@ -33,7 +34,21 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["UPLIFT", "NEUTRAL", "TOXIC", "RAGEBAIT", "DOOMSCROLL", "SHAME", "VIOLENCE", "SEXUALIZED", "SCAM"]
+        "enum": [
+          "UPLIFT",
+          "NEUTRAL",
+          "TOXIC",
+          "RAGEBAIT",
+          "DOOMSCROLL",
+          "SHAME",
+          "VIOLENCE",
+          "SEXUALIZED",
+          "SCAM",
+          "CONSTRUCTIVE_NEWS",
+          "HARD_NEWS",
+          "POSITIVE_HISTORY",
+          "CIVIC_AWARENESS"
+        ]
       }
     },
     "action": {
@@ -69,6 +84,13 @@
     "positive_replacement": {
       "type": "string"
     }
+  },
+  "policy_output": {
+    "required": ["index", "content", "decision", "profile_used", "explanation", "replacement_source", "audit_status", "audit_path"],
+    "optional": ["replacement_explanation", "session_summary"]
+  },
+  "audit_record": {
+    "required": ["ts", "index", "content", "decision", "controls", "profile", "explanation", "validation_error", "local_first", "dark_patterns", "dope_version"]
   },
   "additionalProperties": false
 }

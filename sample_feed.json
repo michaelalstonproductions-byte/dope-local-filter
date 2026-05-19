@@ -70,6 +70,20 @@
       "media_type": "text",
       "metadata": {"expected_category": "SCAM", "expected_labels": ["SCAM", "UPLIFT"]}
     },
+    {
+      "id": "hard_news_001",
+      "text": "Local officials issued a public safety update after the storm with shelter resources and cleanup guidance.",
+      "source": "news_caption",
+      "media_type": "text",
+      "metadata": {"expected_category": "NEUTRAL", "expected_labels": ["HARD_NEWS", "CONSTRUCTIVE_NEWS", "CIVIC_AWARENESS"]}
+    },
+    {
+      "id": "positive_history_001",
+      "text": "A biography about an inventor shows resilience, rebuilding, wisdom, and a lesson from history.",
+      "source": "education_post",
+      "media_type": "text",
+      "metadata": {"expected_category": "UPLIFT", "expected_labels": ["POSITIVE_HISTORY"]}
+    },
     "malformed item that should not crash"
   ]
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Standard-library tests for DOPE v0.2."""
+"""Standard-library tests for DOPE v0.3."""
 
 from __future__ import annotations
 
@@ -11,16 +11,20 @@ import tempfile
 import unittest
 
 from dope_classifier import ACTIONS, CATEGORIES, classify_content, normalize_controls, parse_bool
-from dope_policy_engine import DopePolicyEngine, load_feed, load_controls_config
+from dope_policy_engine import DopePolicyEngine, load_controls_config, load_feed, load_profile
+from dope_reinforcement_engine import load_content_library
+from dope_session_memory import load_session_memory, update_session_memory
 
 
 PROJECT_DIR = pathlib.Path(__file__).resolve().parent
 SAMPLE_FEED = PROJECT_DIR / "sample_feed.json"
 CONTROLS_FILE = PROJECT_DIR / "dope_controls.json"
+PROFILE_FILE = PROJECT_DIR / "dope_profile.json"
+CONTENT_LIBRARY_FILE = PROJECT_DIR / "dope_content_library.json"
 NETWORK_IMPORT_TERMS = ("requests", "urllib", "http.client", "socket")
 
 
-class DopeV02Tests(unittest.TestCase):
+class DopeV03Tests(unittest.TestCase):
     def test_parse_bool_false_strings(self) -> None:
         self.assertIs(parse_bool("false"), False)
         self.assertIs(parse_bool("0"), False)
@@ -56,32 +60,22 @@ class DopeV02Tests(unittest.TestCase):
         decision = classify_content({"text": "Study one lesson and take a walk."})
         self.assertEqual(
             set(decision.keys()),
-            {
-                "score",
-                "confidence",
-                "category",
-                "labels",
-                "action",
-                "reason",
-                "evidence",
-                "positive_replacement",
-            },
+            {"score", "confidence", "category", "labels", "action", "reason", "evidence", "positive_replacement"},
         )
         self.assertIsInstance(decision["score"], int)
         self.assertIn(decision["category"], CATEGORIES)
         self.assertIn(decision["action"], ACTIONS)
+        self.assertIsInstance(decision["labels"], list)
         self.assertIsInstance(decision["reason"], str)
         self.assertEqual(decision["positive_replacement"], "")
 
     def test_confidence_field_exists_and_is_0_to_1(self) -> None:
         decision = classify_content({"text": "Guaranteed profit crypto giveaway double your money."})
-        self.assertIn("confidence", decision)
         self.assertGreaterEqual(decision["confidence"], 0.0)
         self.assertLessEqual(decision["confidence"], 1.0)
 
     def test_labels_field_can_contain_multiple_categories(self) -> None:
         decision = classify_content({"text": "Learn a calm skill, then claim this guaranteed profit crypto giveaway."})
-        self.assertIn("labels", decision)
         self.assertIn("SCAM", decision["labels"])
         self.assertIn("UPLIFT", decision["labels"])
 
@@ -134,6 +128,41 @@ class DopeV02Tests(unittest.TestCase):
         reached = {classify_content(content, controls)["action"] for _, content, controls in cases}
         self.assertEqual(reached, {expected for expected, _, _ in cases})
 
+    def test_profile_json_loads(self) -> None:
+        profile = load_profile(PROFILE_FILE)
+        self.assertEqual(profile["dope_version"], "0.3")
+        self.assertEqual(profile["profile_name"], "default")
+        self.assertIn("business_progress", profile["primary_goals"])
+
+    def test_content_library_json_loads(self) -> None:
+        library = load_content_library(CONTENT_LIBRARY_FILE)
+        self.assertIn("positive_history", library)
+        self.assertIn("constructive_news", library)
+
+    def test_hard_news_is_not_automatically_blocked(self) -> None:
+        decision = classify_content(
+            {"text": "Local officials issued a public safety update after the storm with shelter resources."}
+        )
+        self.assertIn("HARD_NEWS", decision["labels"])
+        self.assertIn(decision["action"], {"ALLOW", "SOFT_WARN"})
+        self.assertNotIn(decision["action"], {"BLOCK", "REPLACE"})
+
+    def test_ragebait_news_is_replaced(self) -> None:
+        decision = classify_content({"text": "You won't believe this election outrage meltdown. Share before they delete."})
+        self.assertEqual(decision["category"], "RAGEBAIT")
+        self.assertEqual(decision["action"], "REPLACE")
+
+    def test_doomscroll_is_replaced(self) -> None:
+        decision = classify_content({"text": "Everything is collapsing and crisis after crisis proves we are doomed."})
+        self.assertEqual(decision["category"], "DOOMSCROLL")
+        self.assertEqual(decision["action"], "REPLACE")
+
+    def test_positive_history_is_allowed(self) -> None:
+        decision = classify_content({"text": "A biography about an inventor shows resilience and a lesson from history."})
+        self.assertIn("POSITIVE_HISTORY", decision["labels"])
+        self.assertIn(decision["category"], {"UPLIFT", "NEUTRAL"})
+        self.assertEqual(decision["action"], "ALLOW")
+
     def test_config_json_loads(self) -> None:
         controls = load_controls_config(CONTROLS_FILE)
         normalized = normalize_controls(controls)
@@ -145,13 +174,7 @@ class DopeV02Tests(unittest.TestCase):
             bad_config = pathlib.Path(tmp) / "bad_config.json"
             bad_config.write_text("{bad json", encoding="utf-8")
             result = subprocess.run(
-                [
-                    sys.executable,
-                    str(PROJECT_DIR / "dope_policy_engine.py"),
-                    str(SAMPLE_FEED),
-                    "--config",
-                    str(bad_config),
-                ],
+                [sys.executable, str(PROJECT_DIR / "dope_policy_engine.py"), str(SAMPLE_FEED), "--config", str(bad_config)],
                 cwd=str(PROJECT_DIR),
                 text=True,
                 capture_output=True,
@@ -185,6 +208,56 @@ class DopeV02Tests(unittest.TestCase):
             self.assertIn("must be an object", result.stderr)
             self.assertNotIn("Traceback", result.stderr)
 
+    def test_profile_cli_works(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            audit_path = pathlib.Path(tmp) / "audit.jsonl"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(SAMPLE_FEED),
+                    "--profile",
+                    str(PROFILE_FILE),
+                    "--audit-path",
+                    str(audit_path),
+                    "--json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload[0]["profile_used"], "default")
+            self.assertIn("explanation", payload[0])
+
+    def test_session_memory_cli_works(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            memory_path = pathlib.Path(tmp) / "memory.json"
+            audit_path = pathlib.Path(tmp) / "audit.jsonl"
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(PROJECT_DIR / "dope_policy_engine.py"),
+                    str(SAMPLE_FEED),
+                    "--session-memory",
+                    str(memory_path),
+                    "--audit-path",
+                    str(audit_path),
+                    "--json",
+                ],
+                cwd=str(PROJECT_DIR),
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            memory = json.loads(memory_path.read_text(encoding="utf-8"))
+            self.assertEqual(memory["items_seen"], len(load_feed(SAMPLE_FEED)))
+            payload = json.loads(result.stdout)
+            self.assertIn("session_summary", payload[-1])
+
     def test_malformed_feed_items_do_not_crash_and_are_audited(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             audit_path = pathlib.Path(tmp) / "audit.jsonl"
@@ -195,15 +268,14 @@ class DopeV02Tests(unittest.TestCase):
             self.assertTrue(all(r["decision"]["action"] == "SOFT_WARN" for r in results))
             self.assertEqual(len(audit_path.read_text(encoding="utf-8").splitlines()), 3)
 
-    def test_decide_content_policy_output_top_level_keys_are_exact(self) -> None:
+    def test_policy_output_includes_explanation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             audit_path = pathlib.Path(tmp) / "audit.jsonl"
-            engine = DopePolicyEngine(audit_path=audit_path)
+            engine = DopePolicyEngine(audit_path=audit_path, profile=load_profile(PROFILE_FILE))
             result = engine.decide_content({"text": "I finished my workout and studied."}, index=0)
-            self.assertEqual(
-                set(result.keys()),
-                {"index", "content", "decision", "audit_status", "audit_path"},
-            )
+            self.assertIn("explanation", result)
+            self.assertIn("profile_used", result)
+            self.assertIn("replacement_source", result)
             self.assertNotIn("validation_error", result)
 
     def test_audit_keeps_validation_error_for_malformed_feed_item(self) -> None:
@@ -214,16 +286,30 @@ class DopeV02Tests(unittest.TestCase):
             self.assertNotIn("validation_error", result)
             record = json.loads(audit_path.read_text(encoding="utf-8").splitlines()[0])
             self.assertEqual(record["validation_error"], "feed_item_not_object:str")
+            self.assertIn("explanation", record)
 
-    def test_audit_includes_dope_version_02(self) -> None:
+    def test_audit_includes_dope_version_03(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             audit_path = pathlib.Path(tmp) / "audit.jsonl"
             engine = DopePolicyEngine(audit_path=audit_path)
             engine.decide_content({"text": "The meeting starts at six."}, index=0)
             record = json.loads(audit_path.read_text(encoding="utf-8").splitlines()[0])
-            self.assertEqual(record["dope_version"], "0.2")
+            self.assertEqual(record["dope_version"], "0.3")
             self.assertTrue(record["local_first"])
             self.assertFalse(record["dark_patterns"]["outrage_optimization"])
+            self.assertEqual(record["profile_used"], "default")
+
+    def test_session_memory_increments_category_and_action_counts(self) -> None:
+        memory = load_session_memory("/tmp/does_not_need_to_exist_dope_memory.json")
+        result = {
+            "decision": {"category": "DOOMSCROLL", "action": "REPLACE", "positive_replacement": "Take six breaths."},
+            "replacement_source": "calm",
+        }
+        updated = update_session_memory(memory, result)
+        self.assertEqual(updated["items_seen"], 1)
+        self.assertEqual(updated["category_counts"]["DOOMSCROLL"], 1)
+        self.assertEqual(updated["action_counts"]["REPLACE"], 1)
+        self.assertEqual(updated["replacement_counts"]["calm"], 1)
 
     def test_json_cli_works(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -246,6 +332,7 @@ class DopeV02Tests(unittest.TestCase):
             payload = json.loads(result.stdout)
             self.assertIsInstance(payload, list)
             self.assertIn("decision", payload[0])
+            self.assertIn("explanation", payload[0])
             self.assertTrue(audit_path.exists())
 
     def test_json_cli_with_valid_config_still_works(self) -> None:
@@ -308,7 +395,7 @@ class DopeV02Tests(unittest.TestCase):
             for line in lines:
                 record = json.loads(line)
                 self.assertIn("decision", record)
-                self.assertEqual(record["dope_version"], "0.2")
+                self.assertEqual(record["dope_version"], "0.3")
 
     def test_no_network_related_imports_are_introduced(self) -> None:
         for path in PROJECT_DIR.glob("*.py"):

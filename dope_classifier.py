@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DOPE v0.2 - Local-first positive reinforcement classifier.
+DOPE v0.3 - Local-first positive reinforcement classifier.
 
 DOPE = Dopamine-Oriented Positive Environment.
 
@@ -17,7 +17,7 @@ import re
 from typing import Any, Dict, Iterable, Mapping, Tuple
 
 
-DOPE_VERSION = "0.2"
+DOPE_VERSION = "0.3"
 
 CATEGORIES = {
     "UPLIFT",
@@ -30,6 +30,15 @@ CATEGORIES = {
     "SEXUALIZED",
     "SCAM",
 }
+
+SECONDARY_LABELS = {
+    "CONSTRUCTIVE_NEWS",
+    "HARD_NEWS",
+    "POSITIVE_HISTORY",
+    "CIVIC_AWARENESS",
+}
+
+ALL_LABELS = CATEGORIES | SECONDARY_LABELS
 
 ACTIONS = {
     "ALLOW",
@@ -233,6 +242,87 @@ UPLIFT_TOKENS = {
     "sleep",
 }
 
+POSITIVE_HISTORY_PHRASES = {
+    "lesson from history",
+    "civil rights",
+    "positive history",
+    "story of resilience",
+    "rebuilt after",
+    "overcame hardship",
+}
+POSITIVE_HISTORY_TOKENS = {
+    "history",
+    "biography",
+    "resilience",
+    "inventor",
+    "freedom",
+    "rebuilding",
+    "recovery",
+    "ancestor",
+    "stoicism",
+    "wisdom",
+}
+
+HARD_NEWS_PHRASES = {
+    "public safety",
+    "court ruling",
+    "economic report",
+    "emergency update",
+    "local officials",
+    "city council",
+}
+HARD_NEWS_TOKENS = {
+    "news",
+    "election",
+    "court",
+    "policy",
+    "budget",
+    "storm",
+    "earthquake",
+    "war",
+    "investigation",
+    "safety",
+    "officials",
+}
+
+CONSTRUCTIVE_NEWS_PHRASES = {
+    "how to help",
+    "recovery plan",
+    "community response",
+    "constructive update",
+    "safety guidance",
+    "what residents can do",
+    "rebuilding effort",
+}
+CONSTRUCTIVE_NEWS_TOKENS = {
+    "recovery",
+    "rebuilding",
+    "guidance",
+    "solutions",
+    "resources",
+    "preparedness",
+    "constructive",
+}
+
+CIVIC_AWARENESS_PHRASES = {
+    "city council",
+    "public meeting",
+    "local election",
+    "court ruling",
+    "community safety",
+    "voter guide",
+}
+CIVIC_AWARENESS_TOKENS = {
+    "civic",
+    "voter",
+    "election",
+    "policy",
+    "council",
+    "court",
+    "community",
+    "local",
+}
+
 TOXIC_PHRASES = {
     "everyone should mock",
     "publicly humiliate",
@@ -320,6 +410,13 @@ CATEGORY_RULES: Dict[str, Tuple[set[str], set[str], str]] = {
     "SCAM": (SCAM_PHRASES, SCAM_TOKENS, "possible scam or manipulation"),
 }
 
+SECONDARY_RULES: Dict[str, Tuple[set[str], set[str], str]] = {
+    "POSITIVE_HISTORY": (POSITIVE_HISTORY_PHRASES, POSITIVE_HISTORY_TOKENS, "positive history or resilience signal"),
+    "HARD_NEWS": (HARD_NEWS_PHRASES, HARD_NEWS_TOKENS, "useful hard news or civic awareness"),
+    "CONSTRUCTIVE_NEWS": (CONSTRUCTIVE_NEWS_PHRASES, CONSTRUCTIVE_NEWS_TOKENS, "constructive news framing"),
+    "CIVIC_AWARENESS": (CIVIC_AWARENESS_PHRASES, CIVIC_AWARENESS_TOKENS, "civic awareness signal"),
+}
+
 HARMFUL_PRIORITY = ["SCAM", "VIOLENCE", "SEXUALIZED", "SHAME", "RAGEBAIT", "DOOMSCROLL", "TOXIC"]
 RISK_WEIGHT = {"SCAM": 100, "VIOLENCE": 95, "SEXUALIZED": 85, "SHAME": 80, "RAGEBAIT": 70, "DOOMSCROLL": 65, "TOXIC": 60, "UPLIFT": 10}
 
@@ -346,7 +443,7 @@ def _positive_allowed(text: str, controls: Dict[str, Any]) -> bool:
 def _category_scores(text: str, controls: Dict[str, Any]) -> tuple[Dict[str, int], Dict[str, Dict[str, list[str]]]]:
     scores = {category: 0 for category in CATEGORIES}
     evidence_by_category: Dict[str, Dict[str, list[str]]] = {}
-    for category, (phrases, tokens, _reason) in CATEGORY_RULES.items():
+    for category, (phrases, tokens, _reason) in {**CATEGORY_RULES, **SECONDARY_RULES}.items():
         phrase_matches, token_matches = _matches(text, phrases, tokens)
         if category == "UPLIFT" and not _positive_allowed(text, controls):
             phrase_matches = []
@@ -366,13 +463,20 @@ def _choose_category(scores: Dict[str, int]) -> str:
         return max(harmful, key=lambda category: (RISK_WEIGHT[category], scores[category]))
     if scores.get("UPLIFT", 0) > 0:
         return "UPLIFT"
+    if scores.get("POSITIVE_HISTORY", 0) > 0:
+        return "UPLIFT"
     return "NEUTRAL"
 
 
 def _confidence(category: str, scores: Dict[str, int]) -> float:
-    if category == "NEUTRAL":
+    secondary_max = max((scores.get(label, 0) for label in SECONDARY_LABELS), default=0)
+    if category == "NEUTRAL" and secondary_max <= 0:
         return 0.0
     primary = scores.get(category, 0)
+    if category == "NEUTRAL":
+        primary = secondary_max
+    if category == "UPLIFT" and primary <= 0:
+        primary = scores.get("POSITIVE_HISTORY", 0)
     if primary <= 0:
         return 0.0
     total = sum(max(0, value) for value in scores.values()) or primary
@@ -440,6 +544,15 @@ def _action_for_category(category: str, controls: Dict[str, Any], confidence: fl
     return "SOFT_WARN"
 
 
+def _news_action(labels: Iterable[str], controls: Dict[str, Any]) -> str | None:
+    label_set = set(labels)
+    if "CONSTRUCTIVE_NEWS" in label_set:
+        return "ALLOW"
+    if "HARD_NEWS" in label_set or "CIVIC_AWARENESS" in label_set:
+        return "SOFT_WARN" if controls["strictness"] == "high" else "ALLOW"
+    return None
+
+
 def required_output(
     score: int,
     category: str,
@@ -453,13 +566,13 @@ def required_output(
     category = category if category in CATEGORIES else "NEUTRAL"
     action = action if action in ACTIONS else "SOFT_WARN"
     score = max(0, min(100, int(score)))
-    label_list = [label for label in (labels or [category]) if label in CATEGORIES]
+    label_list = [label for label in (labels or [category]) if label in ALL_LABELS]
     if category not in label_list:
         label_list.insert(0, category)
     evidence_obj = dict(evidence or {})
     evidence_obj.setdefault("matched_phrases", [])
     evidence_obj.setdefault("matched_tokens", [])
-    evidence_obj.setdefault("category_scores", {cat: 0 for cat in sorted(CATEGORIES)})
+    evidence_obj.setdefault("category_scores", {cat: 0 for cat in sorted(ALL_LABELS)})
 
     return {
         "score": score,
@@ -502,13 +615,19 @@ def classify_content(content: Mapping[str, Any] | Any, controls: Mapping[str, An
     category = _choose_category(scores)
     confidence = _confidence(category, scores)
     score = _score_for_category(category, confidence)
-    action = _action_for_category(category, normalized_controls, confidence)
 
     labels = [cat for cat in HARMFUL_PRIORITY if scores.get(cat, 0) > 0]
     if scores.get("UPLIFT", 0) > 0:
         labels.append("UPLIFT")
+    for label in ("POSITIVE_HISTORY", "CONSTRUCTIVE_NEWS", "HARD_NEWS", "CIVIC_AWARENESS"):
+        if scores.get(label, 0) > 0:
+            labels.append(label)
     if not labels:
         labels = ["NEUTRAL"]
+
+    action = _action_for_category(category, normalized_controls, confidence)
+    if category in {"NEUTRAL", "UPLIFT"}:
+        action = _news_action(labels, normalized_controls) or action
 
     matched_phrases: list[str] = []
     matched_tokens: list[str] = []
@@ -519,6 +638,13 @@ def classify_content(content: Mapping[str, Any] | Any, controls: Mapping[str, An
     reason = CATEGORY_RULES.get(category, (set(), set(), "no strong positive or harmful pattern detected"))[2]
     if category == "NEUTRAL":
         reason = "no strong positive or harmful pattern detected"
+    if category in {"NEUTRAL", "UPLIFT"}:
+        if "CONSTRUCTIVE_NEWS" in labels:
+            reason = "constructive news framing with useful next steps"
+        elif "HARD_NEWS" in labels or "CIVIC_AWARENESS" in labels:
+            reason = "useful hard news or civic awareness without ragebait framing"
+        elif "POSITIVE_HISTORY" in labels:
+            reason = "positive history or resilience signal"
 
     return required_output(
         score=score,
@@ -530,7 +656,7 @@ def classify_content(content: Mapping[str, Any] | Any, controls: Mapping[str, An
         evidence={
             "matched_phrases": sorted(set(matched_phrases)),
             "matched_tokens": sorted(set(matched_tokens)),
-            "category_scores": {cat: scores.get(cat, 0) for cat in sorted(CATEGORIES)},
+            "category_scores": {cat: scores.get(cat, 0) for cat in sorted(ALL_LABELS)},
         },
         positive_replacement="",
     )

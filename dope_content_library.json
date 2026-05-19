@@ -1,0 +1,100 @@
+{
+  "learning": [
+    {
+      "title": "Learn one useful step",
+      "prompt": "Pick one concept you can understand in five minutes and write the takeaway.",
+      "why": "Learning redirects attention toward capability."
+    }
+  ],
+  "creating": [
+    {
+      "title": "Make one small artifact",
+      "prompt": "Draft one paragraph, sketch, outline, hook, or prototype improvement.",
+      "why": "Creating turns energy into something durable."
+    }
+  ],
+  "working": [
+    {
+      "title": "Close one loop",
+      "prompt": "Choose a visible task and move it forward for ten focused minutes.",
+      "why": "Work progress lowers background stress."
+    }
+  ],
+  "fitness": [
+    {
+      "title": "Move before more media",
+      "prompt": "Walk, stretch, or do one low-friction movement set.",
+      "why": "Movement helps reset attention and mood."
+    }
+  ],
+  "calm": [
+    {
+      "title": "Settle the nervous system",
+      "prompt": "Take six slow breaths and relax your shoulders before continuing.",
+      "why": "Calm gives you more choice over the next click."
+    }
+  ],
+  "family": [
+    {
+      "title": "Strengthen one bond",
+      "prompt": "Send a specific kind check-in to someone close to you.",
+      "why": "Healthy connection competes with empty scrolling."
+    }
+  ],
+  "spirituality": [
+    {
+      "title": "Pause for grounding",
+      "prompt": "Take a short prayer, gratitude, or reflection pause.",
+      "why": "Spiritual grounding can restore perspective without forcing positivity."
+    }
+  ],
+  "business_progress": [
+    {
+      "title": "Move a real offer forward",
+      "prompt": "Write the next business decision, client action, invoice step, or launch task.",
+      "why": "Business progress redirects urgency into useful action."
+    }
+  ],
+  "emotional_regulation": [
+    {
+      "title": "Name and lower the intensity",
+      "prompt": "Write one sentence: what happened, what I feel, what I will do next.",
+      "why": "Naming emotion reduces the pull of reactive loops."
+    }
+  ],
+  "positive_history": [
+    {
+      "title": "Learn one story of resilience",
+      "prompt": "Read about someone who overcame hardship and write one lesson you can use today.",
+      "why": "Positive history builds perspective without doomscrolling."
+    }
+  ],
+  "constructive_news": [
+    {
+      "title": "Turn news into one useful action",
+      "prompt": "Read the factual update, identify one practical next step, then stop scanning.",
+      "why": "Constructive news keeps awareness without helplessness framing."
+    }
+  ],
+  "civic_awareness": [
+    {
+      "title": "Use civic information cleanly",
+      "prompt": "Separate facts from framing and note whether there is a local action to take.",
+      "why": "Civic awareness is useful when it does not become an outrage loop."
+    }
+  ],
+  "gratitude": [
+    {
+      "title": "Notice what is still good",
+      "prompt": "Name three concrete things that are working today.",
+      "why": "Gratitude balances attention without denying hard reality."
+    }
+  ],
+  "discipline": [
+    {
+      "title": "Choose the next right action",
+      "prompt": "Do the smallest disciplined action available for five minutes.",
+      "why": "Discipline converts distraction energy into agency."
+    }
+  ]
+}
